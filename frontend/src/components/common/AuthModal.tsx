@@ -52,23 +52,68 @@ export const AuthModal: React.FC = () => {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!regName.trim() || !regEmail.trim() || !regPassword.trim()) {
-      setErrorMessage('Name, email, and password are required.');
+    // 1. Basic required fields check
+    if (!regName.trim()) {
+      setErrorMessage('Full name is required.');
       return;
     }
 
-    if (regPassword.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
+    if (!regEmail.trim()) {
+      setErrorMessage('Email address is required.');
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(regEmail.trim())) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+
+    // 2. Phone validation: exactly 11 numeric digits (0-9)
+    const cleanPhone = regPhone.trim();
+    if (!cleanPhone) {
+      setErrorMessage('Phone number is required and must contain exactly 11 digits (0–9).');
+      return;
+    }
+    if (!/^\d+$/.test(cleanPhone)) {
+      setErrorMessage('Phone number must contain only numeric digits (0–9). No letters, spaces, or symbols.');
+      return;
+    }
+    if (cleanPhone.length !== 11) {
+      setErrorMessage(`Phone number must contain exactly 11 digits (currently ${cleanPhone.length} digits).`);
+      return;
+    }
+
+    // 3. Password validation:
+    // - At least 8 characters
+    // - At least 1 uppercase letter (A-Z)
+    // - At least 1 number (0-9)
+    // - At least 1 special character/symbol
+    if (regPassword.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+    if (!/[A-Z]/.test(regPassword)) {
+      setErrorMessage('Password must contain at least 1 uppercase letter (A–Z).');
+      return;
+    }
+    if (!/[0-9]/.test(regPassword)) {
+      setErrorMessage('Password must contain at least 1 number (0–9).');
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(regPassword)) {
+      setErrorMessage('Password must contain at least 1 special character/symbol (e.g. @, #, $, !).');
+      return;
+    }
+
+    // 4. Confirm password match
     if (regPassword !== regConfirmPassword) {
       setErrorMessage('Passwords do not match.');
       return;
     }
 
     setLoading(true);
-    const res = await register(regName, regEmail, regPassword, regPhone);
+    const res = await register(regName, regEmail, regPassword, cleanPhone);
     setLoading(false);
 
     if (!res.success) {
@@ -77,6 +122,12 @@ export const AuthModal: React.FC = () => {
       setSuccessMessage('Account created successfully!');
     }
   };
+
+  // Password requirement check helper flags
+  const hasMinLength = regPassword.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(regPassword);
+  const hasNumber = /[0-9]/.test(regPassword);
+  const hasSpecial = /[^A-Za-z0-9]/.test(regPassword);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
@@ -220,24 +271,37 @@ export const AuthModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                Phone Number
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+                  Phone Number *
+                </label>
+                <span className={`text-[9px] font-mono ${regPhone.length === 11 ? 'text-[#C5B358]' : 'text-slate-500'}`}>
+                  {regPhone.length}/11 digits
+                </span>
+              </div>
               <div className="relative">
                 <input
                   type="tel"
+                  required
                   value={regPhone}
-                  onChange={(e) => setRegPhone(e.target.value)}
-                  placeholder="+1 (555) 000-1234"
+                  onChange={(e) => {
+                    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    setRegPhone(digitsOnly);
+                  }}
+                  placeholder="03001234567"
+                  maxLength={11}
                   className="w-full pl-9 pr-4 py-2 bg-[#262626] border border-[#444444] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#C5B358]"
                 />
                 <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
+              <p className="text-[9px] text-slate-500 mt-1">
+                Must contain exactly 11 numeric digits (0–9).
+              </p>
             </div>
 
             <div>
               <label className="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                Password * (Min 6 chars)
+                Password * (Min 8 chars)
               </label>
               <div className="relative">
                 <input
@@ -250,6 +314,25 @@ export const AuthModal: React.FC = () => {
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
+
+              {/* Real-time Password Requirements Checklist */}
+              {regPassword.length > 0 && (
+                <div className="mt-2 p-2.5 bg-[#141414] border border-[#333333] space-y-1 text-[10px]">
+                  <div className="font-semibold text-slate-300 mb-0.5">Password Requirements:</div>
+                  <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-[#C5B358]' : 'text-slate-500'}`}>
+                    <span>{hasMinLength ? '✓' : '•'}</span> At least 8 characters
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasUpperCase ? 'text-[#C5B358]' : 'text-slate-500'}`}>
+                    <span>{hasUpperCase ? '✓' : '•'}</span> 1 uppercase letter (A–Z)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-[#C5B358]' : 'text-slate-500'}`}>
+                    <span>{hasNumber ? '✓' : '•'}</span> 1 number (0–9)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-[#C5B358]' : 'text-slate-500'}`}>
+                    <span>{hasSpecial ? '✓' : '•'}</span> 1 special character (@, #, $, !, etc.)
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -267,6 +350,9 @@ export const AuthModal: React.FC = () => {
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
+              {regConfirmPassword && regPassword !== regConfirmPassword && (
+                <p className="text-[10px] text-rose-400 mt-1">Passwords do not match.</p>
+              )}
             </div>
 
             <button

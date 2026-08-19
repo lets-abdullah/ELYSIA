@@ -13,7 +13,7 @@ interface UserDashboardPageProps {
 }
 
 export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate }) => {
-  const { user, userReservations, logout } = useAuth();
+  const { user, userReservations, logout, isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'reservations' | 'payments' | 'notifications' | 'support'>('overview');
 
@@ -121,8 +121,20 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
     setPassErrMsg(null);
     setPassSuccessMsg(null);
 
-    if (newPassword.length < 6) {
-      setPassErrMsg('Password must be at least 6 characters long.');
+    if (newPassword.length < 8) {
+      setPassErrMsg('Password must be at least 8 characters long.');
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      setPassErrMsg('Password must contain at least 1 uppercase letter (A–Z).');
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setPassErrMsg('Password must contain at least 1 number (0–9).');
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      setPassErrMsg('Password must contain at least 1 special character/symbol (e.g. @, #, $, !).');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -176,7 +188,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
       <div className="h-[calc(100vh-5rem)] flex w-full max-w-[1600px] mx-auto overflow-hidden">
 
         {/* ── FIXED LEFT VERTICAL SIDEBAR ── */}
-        <aside className="w-64 bg-[#0D1527] text-slate-300 flex flex-col justify-between p-6 shrink-0 hidden md:flex border-r border-slate-800/80 h-full overflow-y-auto">
+        <aside className="w-64 bg-[#0D1527] text-slate-300 hidden md:flex flex-col justify-between p-6 shrink-0 border-r border-slate-800/80 h-full overflow-y-auto">
           <div className="space-y-8">
 
             {/* Logo Crest Header */}
@@ -613,7 +625,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
 
                 <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">New Password (Min 6 chars)</label>
+                    <label className="block text-slate-700 font-bold mb-1">New Password (Min 8 chars)</label>
                     <div className="relative">
                       <input
                         type="password"

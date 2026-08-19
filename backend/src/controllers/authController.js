@@ -93,10 +93,22 @@ export async function register(req, res) {
       return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
     }
 
-    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+    if (cleanPhone && !/^\d{11}$/.test(cleanPhone)) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 8 characters long and contain both letters and numbers.'
+        message: 'Phone number must contain exactly 11 numeric digits (0–9).'
+      });
+    }
+
+    const hasMinLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasMinLength || !hasUpperCase || !hasNumber || !hasSpecialChar) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long and contain at least 1 uppercase letter (A–Z), 1 number (0–9), and 1 special character/symbol.'
       });
     }
 
@@ -206,10 +218,15 @@ export async function updateProfile(req, res) {
 
     if (password && password.trim() !== '') {
       const trimmedPass = password.trim();
-      if (trimmedPass.length < 8 || !/[a-zA-Z]/.test(trimmedPass) || !/[0-9]/.test(trimmedPass)) {
+      const hasMinLength = trimmedPass.length >= 8;
+      const hasUpperCase = /[A-Z]/.test(trimmedPass);
+      const hasNumber = /[0-9]/.test(trimmedPass);
+      const hasSpecialChar = /[^A-Za-z0-9]/.test(trimmedPass);
+
+      if (!hasMinLength || !hasUpperCase || !hasNumber || !hasSpecialChar) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 8 characters long and contain both letters and numbers.'
+          message: 'Password must be at least 8 characters long and contain at least 1 uppercase letter (A–Z), 1 number (0–9), and 1 special character/symbol.'
         });
       }
       const salt = bcrypt.genSaltSync(10);

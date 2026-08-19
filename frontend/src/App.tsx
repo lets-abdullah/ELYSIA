@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BookingProvider } from './contexts/BookingContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { Navbar } from './components/layout/Navbar';
@@ -20,17 +20,36 @@ import { TermsPage } from './pages/TermsPage';
 import { AuthPage } from './pages/AuthPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { UserDashboardPage } from './pages/UserDashboardPage';
+import { getRouteFromUrl, pushRouteUrl } from './utils/router';
 
 export default function App() {
-  const [activePage, setActivePage] = useState<string>('home');
-  const [activeRoomId, setActiveRoomId] = useState<string>('');
+  // Initialize route from current URL (persists on refresh / direct link)
+  const [routeState, setRouteState] = useState(() => getRouteFromUrl());
 
-  const handleNavigate = (page: string, roomId?: string) => {
-    setActivePage(page);
-    if (roomId) {
-      setActiveRoomId(roomId);
-    }
-  };
+  const activePage = routeState.page;
+  const activeRoomId = routeState.roomId || '';
+
+  // Synchronize with browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      setRouteState(getRouteFromUrl());
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Update route and push state to browser URL
+  const handleNavigate = useCallback((page: string, roomId?: string) => {
+    pushRouteUrl(page, roomId);
+    setRouteState({
+      page,
+      roomId: roomId || '',
+      tab: page === 'register' ? 'register' : 'login'
+    });
+  }, []);
 
   const renderPage = () => {
     switch (activePage) {
