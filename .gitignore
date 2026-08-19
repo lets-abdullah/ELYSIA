@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+*.env
+*/.env
+*/.env.*
+!.env.example
+!*/.env.example
+
+# Build Outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Deployments / Temp
+.vercel/
+*/.vercel/
+coverage/
+*/coverage/
+
+# Audit & Local Non-Code Files
+SECURITY_AUDIT_REPORT.md
+Consolidated_Security_Report.pdf
+claude.md
+pdf_images/
+

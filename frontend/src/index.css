@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Color Palette: Ethereal Grandeur */
+    --color-primary: #1A1A1A;        /* Soft Black */
+    --color-primary-light: #2D2D2D;
+    --color-primary-dark: #000000;
+    --color-gold: #C5B358;           /* Muted Metallic Gold */
+    --color-gold-light: #D4C678;
+    --color-secondary: #C5B358;      /* Gold accent */
+    --color-tertiary: #F5F5F0;       /* Antique Silk background */
+    --color-background: #FAF9F6;     /* Off-White Canvas */
+    --color-card: #FFFFFF;
+    --color-border: #E5E5E5;         /* Soft Gray Hairline */
+    --color-text-main: #1A1A1A;      /* High Contrast Primary Text */
+    --color-text-muted: #5F5E5E;
+    
+    /* Typography */
+    --font-heading: 'Playfair Display', serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Custom Color Utilities */
+.bg-cream {
+  background-color: #FAF9F6;
+}
+
+.bg-silk {
+  background-color: #F5F5F0;
+}
+
+.text-navy {
+  color: #1A1A1A;
+}
+
+.bg-navy {
+  background-color: #1A1A1A;
+}
+
+.border-navy {
+  border-color: #1A1A1A;
+}
+
+/* Gold Accent Utilities */
+.text-gold {
+  color: #C5B358;
+}
+
+.bg-gold {
+  background-color: #C5B358;
+}
+
+.border-gold {
+  border-color: #C5B358;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF9F6;
+}
+::-webkit-scrollbar-thumb {
+  background: #1A1A1A;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C5B358;
+}

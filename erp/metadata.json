@@ -1,0 +1,6 @@
+{
+  "name": "Grand Luxe Hotel ERP",
+  "description": "Comprehensive Grand Horizon Hotel ERP System for managing room bookings, guest CRM, housekeeping operations, restaurant POS, staff scheduling, and financial reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

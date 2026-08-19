@@ -1,0 +1,6 @@
+{
+  "name": "ELYSIA Luxury Hotel",
+  "description": "An ultra-luxury hotel web application featuring bespoke room reservations, interactive gallery, fine dining, and seamless guest services.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
