@@ -112,11 +112,11 @@ export const RoomDetailPage: React.FC<RoomDetailPageProps> = ({ roomId, onNaviga
       {/* Breadcrumb / Back Navigation */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <button
-          onClick={() => onNavigate('rooms')}
+          onClick={() => onNavigate('home')}
           className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#5F5E5E] hover:text-[#1A1A1A] transition-colors cursor-pointer group"
         >
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-          Back to All Rooms
+          Back to Home
         </button>
       </div>
 

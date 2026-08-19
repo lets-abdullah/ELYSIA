@@ -243,11 +243,11 @@ export const BookingPage: React.FC<BookingPageProps> = ({ roomId, onNavigate }) 
         {onNavigate && (
           <div className="mb-6">
             <button
-              onClick={() => onNavigate('rooms')}
+              onClick={() => onNavigate('home')}
               className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#5F5E5E] hover:text-[#1A1A1A] transition-colors cursor-pointer group"
             >
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-              Back to All Rooms ({ROOMS_DATA.length})
+              Back to Home
             </button>
           </div>
         )}

@@ -3,7 +3,8 @@ import {
   User, Mail, Phone, Calendar, Clock, CheckCircle2, AlertCircle, LogOut,
   ArrowRight, ShieldCheck, BedDouble, Building2, CreditCard, Bell, HelpCircle,
   Lock, Edit3, Printer, FileText, Send, Sparkles, Check, Key, Crown,
-  Briefcase, MessageSquare, Headphones, ChevronDown, ChevronRight, X, Eye, EyeOff
+  Briefcase, MessageSquare, Headphones, ChevronDown, ChevronRight, X, Eye, EyeOff,
+  ArrowLeft, Home
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -25,6 +26,8 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
   const [profileErrMsg, setProfileErrMsg] = useState<string | null>(null);
 
   // Change Password Form State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,6 +35,12 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
   const [changingPass, setChangingPass] = useState(false);
   const [passSuccessMsg, setPassSuccessMsg] = useState<string | null>(null);
   const [passErrMsg, setPassErrMsg] = useState<string | null>(null);
+
+  const hasMinLength = newPassword.length >= 12;
+  const hasUpperCase = /[A-Z]/.test(newPassword);
+  const hasLowerCase = /[a-z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+  const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
 
   // Support Form State
   const [supportMessage, setSupportMessage] = useState('');
@@ -102,37 +111,35 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
     setPassErrMsg(null);
     setPassSuccessMsg(null);
 
-    if (newPassword.length < 12) {
-      setPassErrMsg('Password must be at least 12 characters long.');
+    if (!currentPassword.trim()) {
+      setPassErrMsg('Current password is required to update your password.');
       return;
     }
-    if (!/[A-Z]/.test(newPassword)) {
-      setPassErrMsg('Password must contain at least 1 uppercase letter (A–Z).');
+
+    const missingRequirements: string[] = [];
+    if (!hasMinLength) missingRequirements.push('minimum 12 characters');
+    if (!hasUpperCase) missingRequirements.push('at least 1 uppercase letter (A–Z)');
+    if (!hasLowerCase) missingRequirements.push('at least 1 lowercase letter (a–z)');
+    if (!hasNumber) missingRequirements.push('at least 1 number (0–9)');
+    if (!hasSpecial) missingRequirements.push('at least 1 symbol/special character');
+
+    if (missingRequirements.length > 0) {
+      setPassErrMsg(`Password does not meet requirements: ${missingRequirements.join(', ')}.`);
       return;
     }
-    if (!/[a-z]/.test(newPassword)) {
-      setPassErrMsg('Password must contain at least 1 lowercase letter (a–z).');
-      return;
-    }
-    if (!/[0-9]/.test(newPassword)) {
-      setPassErrMsg('Password must contain at least 1 number (0–9).');
-      return;
-    }
-    if (!/[^A-Za-z0-9]/.test(newPassword)) {
-      setPassErrMsg('Password must contain at least 1 symbol/special character (e.g. @, #, $, !).');
-      return;
-    }
+
     if (newPassword !== confirmPassword) {
-      setPassErrMsg('New passwords do not match.');
+      setPassErrMsg('New password and confirmation password do not match.');
       return;
     }
 
     setChangingPass(true);
-    const res = await updateProfile(profileName, profilePhone, newPassword);
+    const res = await updateProfile(profileName, profilePhone, newPassword, currentPassword);
     setChangingPass(false);
 
     if (res.success) {
       setPassSuccessMsg('Password changed successfully!');
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } else {
@@ -205,6 +212,16 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
               })}
             </nav>
           </div>
+
+          {/* Sidebar Footer with Back to Home Button */}
+          <div className="pt-4 border-t border-slate-800/80">
+            <button
+              onClick={() => onNavigate('home')}
+              className="w-full px-4 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/80 flex items-center justify-center gap-2 transition-colors cursor-pointer border border-slate-800"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Home
+            </button>
+          </div>
         </aside>
 
         {/* ── SCROLLABLE RIGHT DASHBOARD CONTENT ── */}
@@ -212,14 +229,29 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
 
           {/* Top Bar Greeting Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                Hello, {user.name} <span className="text-2xl">👋</span>
-              </h1>
-              <p className="text-xs text-slate-500 font-normal">Welcome back to Grand Luxe Hotel</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onNavigate('home')}
+                className="md:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                title="Back to Home"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  Hello, {user.name} <span className="text-2xl">👋</span>
+                </h1>
+                <p className="text-xs text-slate-500 font-normal">Welcome back to Grand Luxe Hotel</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => onNavigate('home')}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <Home className="w-3.5 h-3.5" /> Back to Home
+              </button>
               <button
                 onClick={() => setActiveTab('notifications')}
                 className="relative p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
@@ -592,22 +624,51 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
                 )}
 
                 <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
+                  {/* Current Password */}
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">New Password (Min 12 chars)</label>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      Current Password <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        required
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#B68B40] focus:outline-none"
+                      />
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition p-1 cursor-pointer"
+                      >
+                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* New Password */}
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      New Password (Min 12 chars) <span className="text-rose-500">*</span>
+                    </label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? 'text' : 'password'}
                         required
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="••••••••••••"
                         className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#B68B40] focus:outline-none"
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        aria-label={showNewPassword ? "Hide password" : "Show password"}
+                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition p-1 cursor-pointer"
                       >
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -615,15 +676,43 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
                     </div>
                   </div>
 
+                  {/* Complete Password Requirements Checklist (All shown at once) */}
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-[11px]">
+                    <p className="font-bold text-slate-700 mb-1">Password Requirements:</p>
+                    <div className={`flex items-center gap-2 ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                      <Check className={`w-3.5 h-3.5 ${hasMinLength ? 'text-emerald-600' : 'text-slate-300'}`} />
+                      <span>Minimum 12 characters</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${hasUpperCase ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                      <Check className={`w-3.5 h-3.5 ${hasUpperCase ? 'text-emerald-600' : 'text-slate-300'}`} />
+                      <span>At least one uppercase letter (A–Z)</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${hasLowerCase ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                      <Check className={`w-3.5 h-3.5 ${hasLowerCase ? 'text-emerald-600' : 'text-slate-300'}`} />
+                      <span>At least one lowercase letter (a–z)</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                      <Check className={`w-3.5 h-3.5 ${hasNumber ? 'text-emerald-600' : 'text-slate-300'}`} />
+                      <span>At least one number (0–9)</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${hasSpecial ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                      <Check className={`w-3.5 h-3.5 ${hasSpecial ? 'text-emerald-600' : 'text-slate-300'}`} />
+                      <span>At least one symbol / special character (e.g. @, #, $, !)</span>
+                    </div>
+                  </div>
+
+                  {/* Confirm New Password */}
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">Confirm New Password</label>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      Confirm New Password <span className="text-rose-500">*</span>
+                    </label>
                     <div className="relative">
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="••••••••••••"
                         className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#B68B40] focus:outline-none"
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -643,7 +732,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
                     disabled={changingPass}
                     className="w-full py-3.5 bg-[#0D1527] text-white font-bold text-xs uppercase tracking-wider hover:bg-slate-800 transition-colors rounded-xl disabled:opacity-50 cursor-pointer shadow-xs"
                   >
-                    {changingPass ? 'Updating Password...' : 'Update Password'}
+                    {changingPass ? 'Updating Password...' : 'UPDATE PASSWORD'}
                   </button>
                 </form>
               </div>

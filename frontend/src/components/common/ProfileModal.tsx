@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   X, User, Mail, Phone, Calendar, ShieldCheck, KeyRound,
-  Bed, CheckCircle2, Clock, DollarSign, LogOut, RefreshCw, AlertCircle, BookmarkCheck
+  Bed, CheckCircle2, Clock, DollarSign, LogOut, RefreshCw, AlertCircle, BookmarkCheck,
+  Check, Lock, Eye, EyeOff
 } from 'lucide-react';
 import { useAuth, UserReservation } from '../../contexts/AuthContext';
 
@@ -22,9 +23,20 @@ export const ProfileModal: React.FC = () => {
   // Edit profile states
   const [editName, setEditName] = useState(user?.name || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
+  const [currentPass, setCurrentPass] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [editPass, setEditPass] = useState('');
+  const [showEditPass, setShowEditPass] = useState(false);
+  const [confirmPass, setConfirmPass] = useState('');
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const hasMinLength = editPass.length >= 12;
+  const hasUpperCase = /[A-Z]/.test(editPass);
+  const hasLowerCase = /[a-z]/.test(editPass);
+  const hasNumber = /[0-9]/.test(editPass);
+  const hasSpecial = /[^A-Za-z0-9]/.test(editPass);
 
   React.useEffect(() => {
     if (user) {
@@ -38,14 +50,40 @@ export const ProfileModal: React.FC = () => {
   const handleUpdateProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatusMsg(null);
-    setSaving(true);
 
-    const res = await updateProfile(editName, editPhone, editPass || undefined);
+    if (editPass.trim() !== '') {
+      if (!currentPass.trim()) {
+        setStatusMsg({ type: 'error', text: 'Current password is required to update your password.' });
+        return;
+      }
+
+      const missing: string[] = [];
+      if (!hasMinLength) missing.push('min 12 characters');
+      if (!hasUpperCase) missing.push('uppercase letter');
+      if (!hasLowerCase) missing.push('lowercase letter');
+      if (!hasNumber) missing.push('number');
+      if (!hasSpecial) missing.push('symbol/special character');
+
+      if (missing.length > 0) {
+        setStatusMsg({ type: 'error', text: `Password requirements missing: ${missing.join(', ')}.` });
+        return;
+      }
+
+      if (editPass !== confirmPass) {
+        setStatusMsg({ type: 'error', text: 'New password and confirm password do not match.' });
+        return;
+      }
+    }
+
+    setSaving(true);
+    const res = await updateProfile(editName, editPhone, editPass || undefined, currentPass || undefined);
     setSaving(false);
 
     if (res.success) {
       setStatusMsg({ type: 'success', text: 'Profile details saved successfully.' });
+      setCurrentPass('');
       setEditPass('');
+      setConfirmPass('');
     } else {
       setStatusMsg({ type: 'error', text: res.message || 'Failed to update profile.' });
     }
@@ -348,20 +386,111 @@ export const ProfileModal: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#333333]">
-                <label className="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">
+              <div className="pt-3 border-t border-[#333333] space-y-3">
+                <p className="text-[11px] uppercase tracking-wider text-[#C5B358] font-bold">
                   Change Password (Leave blank to keep unchanged)
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={editPass}
-                    onChange={(e) => setEditPass(e.target.value)}
-                    placeholder="New Password (Min 12 characters)"
-                    className="w-full pl-9 pr-4 py-2 bg-[#262626] border border-[#444444] text-xs text-white focus:outline-none focus:border-[#C5B358]"
-                  />
-                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                </p>
+
+                {/* Current Password */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPass ? 'text' : 'password'}
+                      value={currentPass}
+                      onChange={(e) => setCurrentPass(e.target.value)}
+                      placeholder="Enter your current password"
+                      className="w-full pl-9 pr-10 py-2 bg-[#262626] border border-[#444444] text-xs text-white focus:outline-none focus:border-[#C5B358]"
+                    />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPass(!showCurrentPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition p-1 cursor-pointer"
+                    >
+                      {showCurrentPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">
+                    New Password (Min 12 characters)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showEditPass ? 'text' : 'password'}
+                      value={editPass}
+                      onChange={(e) => setEditPass(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full pl-9 pr-10 py-2 bg-[#262626] border border-[#444444] text-xs text-white focus:outline-none focus:border-[#C5B358]"
+                    />
+                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPass(!showEditPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition p-1 cursor-pointer"
+                    >
+                      {showEditPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Requirements Checklist (Shown whenever user types in new password) */}
+                {editPass.length > 0 && (
+                  <div className="p-3 bg-[#111111] border border-[#333333] rounded space-y-1 text-[10px]">
+                    <p className="font-bold text-slate-300 mb-1">Requirements Checklist:</p>
+                    <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      <Check className={`w-3 h-3 ${hasMinLength ? 'text-emerald-400' : 'text-slate-600'}`} />
+                      <span>Minimum 12 characters</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${hasUpperCase ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      <Check className={`w-3 h-3 ${hasUpperCase ? 'text-emerald-400' : 'text-slate-600'}`} />
+                      <span>At least one uppercase letter (A–Z)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${hasLowerCase ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      <Check className={`w-3 h-3 ${hasLowerCase ? 'text-emerald-400' : 'text-slate-600'}`} />
+                      <span>At least one lowercase letter (a–z)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      <Check className={`w-3 h-3 ${hasNumber ? 'text-emerald-400' : 'text-slate-600'}`} />
+                      <span>At least one number (0–9)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      <Check className={`w-3 h-3 ${hasSpecial ? 'text-emerald-400' : 'text-slate-600'}`} />
+                      <span>At least one symbol / special character (@, #, $, !)</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Confirm New Password */}
+                {editPass.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPass ? 'text' : 'password'}
+                        value={confirmPass}
+                        onChange={(e) => setConfirmPass(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full pl-9 pr-10 py-2 bg-[#262626] border border-[#444444] text-xs text-white focus:outline-none focus:border-[#C5B358]"
+                      />
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition p-1 cursor-pointer"
+                      >
+                        {showConfirmPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-3 flex justify-end">

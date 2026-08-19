@@ -214,7 +214,7 @@ export async function me(req, res) {
 export async function updateProfile(req, res) {
   try {
     const userId = req.user.id;
-    const { name, phone, password } = req.body;
+    const { name, phone, password, currentPassword } = req.body;
 
     if (name !== undefined && typeof name !== 'string') {
       return res.status(400).json({ success: false, message: 'Name must be a valid string.' });
@@ -224,6 +224,9 @@ export async function updateProfile(req, res) {
     }
     if (password !== undefined && typeof password !== 'string') {
       return res.status(400).json({ success: false, message: 'Password must be a valid string.' });
+    }
+    if (currentPassword !== undefined && typeof currentPassword !== 'string') {
+      return res.status(400).json({ success: false, message: 'Current password must be a valid string.' });
     }
 
     const existing = await query('SELECT * FROM users WHERE id = $1', [userId]);
@@ -237,6 +240,21 @@ export async function updateProfile(req, res) {
     let newHash = currentUser.password_hash;
 
     if (password && password.trim() !== '') {
+      if (!currentPassword || currentPassword.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Current password is required to set a new password.'
+        });
+      }
+
+      const isCurrentValid = bcrypt.compareSync(currentPassword.trim(), currentUser.password_hash);
+      if (!isCurrentValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Incorrect current password. Please enter your valid current password.'
+        });
+      }
+
       const trimmedPass = password.trim();
       const hasMinLength = trimmedPass.length >= 12;
       const hasUpperCase = /[A-Z]/.test(trimmedPass);

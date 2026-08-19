@@ -46,7 +46,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, pass: string, phone: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
-  updateProfile: (name: string, phone: string, pass?: string) => Promise<{ success: boolean; message?: string }>;
+  updateProfile: (name: string, phone: string, pass?: string, currentPass?: string) => Promise<{ success: boolean; message?: string }>;
   fetchMyReservations: () => Promise<void>;
 
   openAuthModal: (tab?: 'login' | 'register') => void;
@@ -201,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateProfile = async (name: string, phone: string, pass?: string) => {
+  const updateProfile = async (name: string, phone: string, pass?: string, currentPass?: string) => {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
@@ -213,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'PUT',
         headers,
         credentials: 'include',
-        body: JSON.stringify({ name, phone, password: pass })
+        body: JSON.stringify({ name, phone, password: pass, currentPassword: currentPass })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {

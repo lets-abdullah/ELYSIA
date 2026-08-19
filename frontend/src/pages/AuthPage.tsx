@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Phone, LogIn, UserPlus, AlertCircle, ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Phone, LogIn, UserPlus, AlertCircle, ShieldCheck, ArrowRight, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AuthPageProps {
@@ -149,8 +149,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
   const hasValidPhone = /^\d{11}$/.test(regPhone);
 
   return (
-    <div className="min-h-screen pt-28 pb-16 bg-[#FAF9F6] text-[#1A1A1A] flex items-center justify-center px-4">
-      <div className="w-full max-w-lg bg-white border border-[#E5E5E5] shadow-xl rounded-2xl overflow-hidden my-6">
+    <div className="min-h-screen pt-28 pb-16 bg-[#FAF9F6] text-[#1A1A1A] flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-lg mb-2">
+        <button
+          onClick={() => onNavigate('home')}
+          className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-stone-500 hover:text-stone-900 transition-colors cursor-pointer font-medium"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </button>
+      </div>
+
+      <div className="w-full max-w-lg bg-white border border-[#E5E5E5] shadow-xl rounded-2xl overflow-hidden my-4">
 
         {/* Page Header */}
         <div className="p-8 text-center border-b border-stone-200 bg-[#F8F5EB]">
