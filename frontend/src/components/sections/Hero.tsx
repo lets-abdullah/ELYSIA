@@ -17,7 +17,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
         playsInline
         preload="auto"
         poster="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1920&q=80"
-        className="absolute inset-0 w-full h-full object-cover z-0 opacity-75 scale-105 transition-transform duration-1000 ease-out pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 scale-105 transition-transform duration-1000 ease-out pointer-events-none"
       >
         <source src="/hero-video.mp4" type="video/mp4" />
         <source src="/src/assets/hero-video.mp4" type="video/mp4" />
@@ -29,7 +29,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
 
       {/* ── Hero Content (Centered & Legible) ── */}
       <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6 pt-12 sm:pt-16">
-        
+
         {/* Subtle Luxury Badge */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}

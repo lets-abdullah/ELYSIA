@@ -126,9 +126,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const nights = getNightsCount();
     const pricePerNight = selectedRoom?.pricePerNight || (selectedRoom as unknown as { price?: number })?.price || 0;
     const basePrice = pricePerNight * nights;
+    const tax = Math.round(basePrice * 0.10);
     const transferFee = airportTransfer ? 250 : 0;
     const spaFee = spaPackage ? 350 * guests : 0;
-    return basePrice + transferFee + spaFee;
+    return basePrice + tax + transferFee + spaFee;
   };
 
   return (

@@ -63,7 +63,9 @@ export const RoomDetailPage: React.FC<RoomDetailPageProps> = ({ roomId, onNaviga
   };
 
   const nights = getNights();
-  const total = room.pricePerNight * nights;
+  const subtotal = room.pricePerNight * nights;
+  const tax = Math.round(subtotal * 0.10);
+  const total = subtotal + tax;
 
   const prevImage = () => {
     const newIdx = (galleryIndex - 1 + room.gallery.length) % room.gallery.length;
@@ -375,15 +377,15 @@ export const RoomDetailPage: React.FC<RoomDetailPageProps> = ({ roomId, onNaviga
                       <div className="bg-[#FAF9F6] border border-[#E5E5E5] p-4 space-y-2 text-xs">
                         <div className="flex justify-between text-[#5F5E5E]">
                           <span>${room.pricePerNight.toLocaleString()} × {nights} night{nights > 1 ? 's' : ''}</span>
-                          <span className="text-[#1A1A1A] font-medium">${total.toLocaleString()}</span>
+                          <span className="text-[#1A1A1A] font-medium">${subtotal.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-[#5F5E5E]">
-                          <span>Taxes & Fees (est.)</span>
-                          <span className="text-[#1A1A1A] font-medium">${Math.round(total * 0.12).toLocaleString()}</span>
+                          <span>Taxes & Fees (10%)</span>
+                          <span className="text-[#1A1A1A] font-medium">${tax.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between font-semibold text-[#1A1A1A] border-t border-[#E5E5E5] pt-2 mt-1">
                           <span className="uppercase tracking-wider text-[10px]">Estimated Total</span>
-                          <span className="font-serif text-base">${Math.round(total * 1.12).toLocaleString()}</span>
+                          <span className="font-serif text-base text-[#C5B358]">${total.toLocaleString()} USD</span>
                         </div>
                       </div>
                     )}

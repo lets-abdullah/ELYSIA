@@ -133,5 +133,37 @@ export const ROOMS_DATA: Room[] = [
     description: 'Refined Italian design with marble fireplace, soaking tub, and balcony.',
     amenities: ['Marble Bath', 'Private Balcony', 'Nespresso Coffee', 'Wi-Fi'],
     featured: false
+  },
+  {
+    id: 'terrace-bedroom',
+    name: 'Rooftop Terrace Bedroom',
+    tagline: 'Access to private rooftop lounge overlooking the city skyline.',
+    category: 'Standard',
+    pricePerNight: 165,
+    sizeSqFt: 450,
+    maxGuests: 2,
+    bedType: 'Queen Bed',
+    view: 'Rooftop City Skyline',
+    image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'],
+    description: 'Direct access to private rooftop terrace with views across the urban panorama.',
+    amenities: ['Rooftop Terrace Access', 'City View', 'Wi-Fi', 'Smart TV'],
+    featured: false
+  },
+  {
+    id: 'penthouse-bedroom',
+    name: 'Grand Penthouse Suite',
+    tagline: 'The ultimate luxury experience atop the hotel with private heated plunge pool.',
+    category: 'Presidential',
+    pricePerNight: 650,
+    sizeSqFt: 1200,
+    maxGuests: 4,
+    bedType: 'California Super King Bed',
+    view: '360° Ocean & City Penthouse Vista',
+    image: 'https://images.unsplash.com/photo-1631049421450-348ccd7f8949?auto=format&fit=crop&w=1200&q=80',
+    gallery: ['https://images.unsplash.com/photo-1631049421450-348ccd7f8949?auto=format&fit=crop&w=1200&q=80'],
+    description: 'Sprawling duplex suite with dedicated butler service, infinity plunge pool, and grand living room.',
+    amenities: ['Private Pool', 'Panoramic View', 'Butler Service', '24/7 Room Service', 'Smart TV', 'Wi-Fi'],
+    featured: true
   }
 ];

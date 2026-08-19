@@ -29,6 +29,7 @@ export const BookingModule: React.FC<{
     bookings,
     rooms,
     guests,
+    hotelSettings,
     addBooking,
     assignRoomToBooking,
     updateBookingStatus,
@@ -94,13 +95,17 @@ export const BookingModule: React.FC<{
     setIsModalOpen(true);
   };
 
-  // Calculate nights & total price dynamically
+  // Calculate nights & total price dynamically (Room Base Price * Nights + Dynamic Tax)
+  const currentTaxRate = hotelSettings?.taxRate !== undefined ? hotelSettings.taxRate : 10.0;
   const selectedRoom = rooms.find((r) => r.id === formData.roomId);
   const d1 = new Date(formData.checkInDate);
   const d2 = new Date(formData.checkOutDate);
   const diffTime = Math.max(0, d2.getTime() - d1.getTime());
   const calculatedNights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-  const calculatedTotal = (selectedRoom ? selectedRoom.price : 150) * calculatedNights;
+  const roomPricePerNight = selectedRoom ? selectedRoom.price : 200;
+  const calculatedBasePrice = roomPricePerNight * calculatedNights;
+  const calculatedTax = Math.round(calculatedBasePrice * (currentTaxRate / 100));
+  const calculatedTotal = calculatedBasePrice + calculatedTax;
 
   const handleSelectGuest = (guestId: string) => {
     const g = guests.find((x) => x.id === guestId);
@@ -516,13 +521,19 @@ export const BookingModule: React.FC<{
           </div>
 
           {/* Simple Rate Summary */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-            <span className="text-slate-600 font-medium whitespace-nowrap">
-              Stay: <strong>{calculatedNights} Night(s)</strong>
-            </span>
-            <span className="text-sm font-bold text-slate-900 whitespace-nowrap">
-              Total: ${calculatedTotal}
-            </span>
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-xs">
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Stay: <strong>{calculatedNights} Night(s)</strong> (${roomPricePerNight}/night)</span>
+              <span>${calculatedBasePrice}</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Tax ({currentTaxRate}%)</span>
+              <span>${calculatedTax}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm font-bold text-slate-900 border-t border-slate-200 pt-1 mt-1">
+              <span>Grand Total</span>
+              <span className="text-emerald-600">${calculatedTotal}</span>
+            </div>
           </div>
 
           <div>

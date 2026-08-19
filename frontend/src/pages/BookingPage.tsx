@@ -111,7 +111,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({ roomId, onNavigate }) 
 
   const pricePerNight = activeRoom.pricePerNight || (activeRoom as any).price || 200;
   const subtotal = pricePerNight * nights;
-  const tax = Math.round(subtotal * 0.12);
+  const tax = Math.round(subtotal * 0.10);
   const total = subtotal + tax;
 
   const handleSelectRoom = (room: Room) => {
@@ -562,7 +562,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({ roomId, onNavigate }) 
                       <span className="font-semibold">${subtotal.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#5F5E5E]">Estimated Taxes & Fees (12%)</span>
+                      <span className="text-[#5F5E5E]">Estimated Taxes & Fees (10%)</span>
                       <span className="font-semibold">${tax.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between border-t border-[#E5E5E5] pt-2 text-sm font-bold text-[#1A1A1A]">

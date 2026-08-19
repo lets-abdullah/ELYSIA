@@ -132,6 +132,30 @@ export const INITIAL_ROOMS: Room[] = [
     amenities: ['Marble Bath', 'Private Balcony', 'Nespresso Coffee'],
     status: 'Maintenance',
     notes: 'Aurelia Royal Bedroom'
+  },
+  {
+    id: 'terrace-bedroom',
+    roomNumber: '502',
+    floor: 5,
+    type: 'Standard',
+    bedType: 'Queen',
+    price: 165,
+    capacity: 2,
+    amenities: ['Rooftop Terrace Access', 'City View', 'Wi-Fi', 'Smart TV'],
+    status: 'Available',
+    notes: 'Rooftop Terrace Bedroom - Private Terrace Access'
+  },
+  {
+    id: 'penthouse-bedroom',
+    roomNumber: '601',
+    floor: 6,
+    type: 'Presidential Suite',
+    bedType: 'King',
+    price: 650,
+    capacity: 4,
+    amenities: ['Private Pool', 'Panoramic View', 'Butler Service', '24/7 Room Service', 'Smart TV', 'Wi-Fi'],
+    status: 'Available',
+    notes: 'Grand Penthouse Suite - Top Floor Penthouse Vista'
   }
 ];
 
