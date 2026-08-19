@@ -1,40 +1,6 @@
 import { Room, Guest, Booking, InventoryItem, User, Staff, HousekeepingTask, Invoice, ActivityLog, MenuItem, RestaurantOrder, MaintenanceRequest, Expense, PayrollRecord } from '../types';
 
-export const INITIAL_USERS: User[] = [
-  {
-    id: 'usr-1',
-    name: 'Alexander Wright',
-    username: 'a.wright',
-    email: 'a.wright@grandluxe.com',
-    role: 'Admin',
-    phone: '+1 (555) 019-2831',
-    status: 'Active',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    lastActive: new Date().toISOString()
-  },
-  {
-    id: 'usr-2',
-    name: 'Elena Rostova',
-    username: 'e.rostova',
-    email: 'e.rostova@grandluxe.com',
-    role: 'Manager',
-    phone: '+1 (555) 012-9844',
-    status: 'Active',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    lastActive: new Date().toISOString()
-  },
-  {
-    id: 'usr-3',
-    name: 'Marcus Sterling',
-    username: 'm.sterling',
-    email: 'm.sterling@grandluxe.com',
-    role: 'Receptionist',
-    phone: '+1 (555) 014-3321',
-    status: 'Active',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    lastActive: new Date().toISOString()
-  }
-];
+export const INITIAL_USERS: User[] = [];
 
 export const INITIAL_ROOMS: Room[] = [
   {
@@ -162,47 +128,7 @@ export const INITIAL_ROOMS: Room[] = [
 export const INITIAL_GUESTS: Guest[] = [];
 export const INITIAL_BOOKINGS: Booking[] = [];
 
-export const INITIAL_STAFF: Staff[] = [
-  {
-    id: 'emp-1',
-    name: 'Alexander Wright',
-    role: 'Admin',
-    position: 'General Manager',
-    email: 'a.wright@grandluxe.com',
-    phone: '+1 (555) 019-2831',
-    department: 'Reception',
-    salary: 8500,
-    joiningDate: '2021-03-15',
-    status: 'Active',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 'emp-2',
-    name: 'Elena Rostova',
-    role: 'Manager',
-    position: 'Operations Manager',
-    email: 'e.rostova@grandluxe.com',
-    phone: '+1 (555) 012-9844',
-    department: 'Reception',
-    salary: 6200,
-    joiningDate: '2022-01-10',
-    status: 'Active',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 'emp-3',
-    name: 'Marcus Sterling',
-    role: 'Receptionist',
-    position: 'Lead Receptionist',
-    email: 'm.sterling@grandluxe.com',
-    phone: '+1 (555) 014-3321',
-    department: 'Reception',
-    salary: 3800,
-    joiningDate: '2023-06-01',
-    status: 'Active',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
-  }
-];
+export const INITIAL_STAFF: Staff[] = [];
 
 export const INITIAL_HOUSEKEEPING: HousekeepingTask[] = [
   {
