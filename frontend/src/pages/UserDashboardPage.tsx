@@ -13,7 +13,7 @@ interface UserDashboardPageProps {
 }
 
 export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate }) => {
-  const { user, userReservations, logout, isAuthenticated } = useAuth();
+  const { user, userReservations, logout } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'reservations' | 'payments' | 'notifications' | 'support'>('overview');
 
