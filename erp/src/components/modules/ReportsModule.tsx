@@ -30,18 +30,26 @@ import { useHotel } from '../../context/HotelContext';
 type ReportTab = 'revenue' | 'occupancy' | 'bookings' | 'guests' | 'staff';
 
 export const ReportsModule: React.FC = () => {
-  const { rooms, guests, staff, bookings, invoices } = useHotel();
+  const { rooms, guests, staff, bookings, invoices, hotelSettings } = useHotel();
   const [activeReport, setActiveReport] = useState<ReportTab>('revenue');
 
-  // Revenue analytics from live bookings (Price per night * nights + 10% tax + $150 security deposit)
+  const currentTaxRate = hotelSettings?.taxRate !== undefined ? hotelSettings.taxRate : 10.0;
+
+  // Revenue analytics from live bookings (Price per night * nights + Dynamic Tax, No Security Charges)
   const totalRevenue = (bookings || [])
     .filter((b) => b.paymentStatus === 'Paid' || (b.paidAmount && b.paidAmount > 0))
     .reduce((sum, bk) => {
       const total = bk.totalAmount || 0;
-      const securityCharges = 150;
-      const grandTotal = total + securityCharges;
+      const nights = bk.nights || (bk.checkInDate && bk.checkOutDate
+        ? Math.max(1, Math.ceil((new Date(bk.checkOutDate).getTime() - new Date(bk.checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
+        : 1);
+      const baseRoomPrice = bk.pricePerNight
+        ? (bk.pricePerNight * nights)
+        : (total > 0 ? Math.round(total / (1 + currentTaxRate / 100)) : 0);
+      const tax = Math.round(baseRoomPrice * (currentTaxRate / 100));
+      const totalAmount = baseRoomPrice + tax;
       const isPaid = bk.paymentStatus === 'Paid' || (bk.paidAmount && bk.paidAmount >= total);
-      return sum + (isPaid ? grandTotal : (bk.paidAmount || 0));
+      return sum + (isPaid ? totalAmount : (bk.paidAmount || 0));
     }, 0);
 
   const monthlyRevenueData = [

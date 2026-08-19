@@ -3,8 +3,10 @@ import { useHotel } from '../../../../context/HotelContext';
 import { LogOut, DollarSign, ShieldCheck, Sparkles, Building2, Percent, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export const CheckOutExpressPage: React.FC = () => {
-  const { bookings, updateBookingStatus, updateGuestPaymentStatus, showToast } = useHotel();
+  const { bookings, updateBookingStatus, updateGuestPaymentStatus, showToast, hotelSettings } = useHotel();
   const [selectedBookingId, setSelectedBookingId] = useState<string>('');
+
+  const currentTaxRate = hotelSettings?.taxRate !== undefined ? hotelSettings.taxRate : 10.0;
 
   const checkedInBookings = bookings.filter(
     (b) =>
@@ -17,11 +19,10 @@ export const CheckOutExpressPage: React.FC = () => {
 
   const selectedBooking = bookings.find((b) => b.id === selectedBookingId);
 
-  // Calculate financial components
+  // Calculate financial components (Room Price + Dynamic Tax, No Security Deposit)
   const roomPrice = selectedBooking ? selectedBooking.totalAmount : 0;
-  const securityCharges = 150;
-  const tax = Math.round(roomPrice * 0.1);
-  const totalSettlement = roomPrice + securityCharges;
+  const tax = Math.round(roomPrice * (currentTaxRate / 100));
+  const totalSettlement = roomPrice + tax;
 
   const handleProcessCheckOut = (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,16 +120,8 @@ export const CheckOutExpressPage: React.FC = () => {
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
-                    <span>Security Deposit (Refundable upon inspection)</span>
-                  </div>
-                  <span className="font-bold text-amber-400">${securityCharges}</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-2">
                     <Percent className="w-4 h-4 text-blue-400" />
-                    <span>Taxes & Service VAT (10%)</span>
+                    <span>Taxes & Service VAT ({currentTaxRate}%)</span>
                   </div>
                   <span className="font-bold text-blue-400">${tax}</span>
                 </div>

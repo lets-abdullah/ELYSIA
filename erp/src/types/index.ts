@@ -256,3 +256,15 @@ export interface InventoryItem {
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 }
 
+export interface HotelSettings {
+  hotelName: string;
+  currency: string;
+  checkInTime: string;
+  checkOutTime: string;
+  taxRate: number;
+  serviceCharge: number;
+  autoHousekeepingDispatch: boolean;
+  emailAlerts: boolean;
+}
+
+

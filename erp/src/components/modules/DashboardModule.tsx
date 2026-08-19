@@ -41,8 +41,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   setActiveTab,
   onOpenNewBookingModal
 }) => {
-  const { rooms, guests, staff, bookings, invoices, activityLogs } = useHotel();
+  const { rooms, guests, staff, bookings, invoices, activityLogs, hotelSettings } = useHotel();
   const [chartView, setChartView] = useState<'daily' | 'category'>('daily');
+
+  const currentTaxRate = hotelSettings?.taxRate !== undefined ? hotelSettings.taxRate : 10.0;
 
   // Metrics calculations (Case-insensitive for real-time DB & UI sync)
   const totalRooms = rooms.length;
@@ -55,15 +57,21 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   const occupancyRate = totalRooms > 0 ? Math.round(((occupiedRooms + reservedRooms) / totalRooms) * 100) : 0;
   const totalGuests = guests.length;
 
-  // Calculate revenue from Paid bookings (Base Price based on nights + 10% tax + $150 security deposit)
+  // Calculate revenue from Paid bookings (Base Price based on nights + Dynamic Tax, No Security Charges)
   const totalRevenue = (bookings || [])
     .filter((b) => b.paymentStatus === 'Paid' || (b.paidAmount && b.paidAmount > 0))
     .reduce((sum, bk) => {
       const total = bk.totalAmount || 0;
-      const securityCharges = 150;
-      const grandTotal = total + securityCharges;
+      const nights = bk.nights || (bk.checkInDate && bk.checkOutDate
+        ? Math.max(1, Math.ceil((new Date(bk.checkOutDate).getTime() - new Date(bk.checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
+        : 1);
+      const baseRoomPrice = bk.pricePerNight
+        ? (bk.pricePerNight * nights)
+        : (total > 0 ? Math.round(total / (1 + currentTaxRate / 100)) : 0);
+      const tax = Math.round(baseRoomPrice * (currentTaxRate / 100));
+      const totalAmount = baseRoomPrice + tax;
       const isPaid = bk.paymentStatus === 'Paid' || (bk.paidAmount && bk.paidAmount >= total);
-      return sum + (isPaid ? grandTotal : (bk.paidAmount || 0));
+      return sum + (isPaid ? totalAmount : (bk.paidAmount || 0));
     }, 0);
 
   // Generate multi-point Daily Revenue Trend (Last 7 Days)

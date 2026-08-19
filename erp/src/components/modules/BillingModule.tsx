@@ -2,20 +2,19 @@ import React, { useState } from 'react';
 import {
   DollarSign,
   Search,
-  CheckCircle2,
-  AlertCircle,
   Building2,
-  Percent,
-  ShieldCheck
+  Percent
 } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 
 export const BillingModule: React.FC = () => {
-  const { bookings, updateGuestPaymentStatus } = useHotel();
+  const { bookings, updateGuestPaymentStatus, hotelSettings } = useHotel();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
 
-  // Calculate Finance Records from active bookings
+  const currentTaxRate = hotelSettings?.taxRate !== undefined ? hotelSettings.taxRate : 10.0;
+
+  // Calculate Finance Records from active bookings (Room Price + Dynamic Tax, No Security Charges)
   const financeRecords = (bookings || []).map((bk) => {
     const total = bk.totalAmount || 0;
     // Calculate nights dynamically from check-in/check-out dates
@@ -23,10 +22,12 @@ export const BillingModule: React.FC = () => {
       ? Math.max(1, Math.ceil((new Date(bk.checkOutDate).getTime() - new Date(bk.checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
       : 1);
 
-    // Calculate 10% tax, $150 security deposit, and base room price
-    const tax = Math.round(total * 0.1);
-    const securityCharges = 150;
-    const baseRoomPrice = Math.max(0, total - tax);
+    // Calculate dynamic tax and base room price based on settings
+    const baseRoomPrice = bk.pricePerNight
+      ? (bk.pricePerNight * nights)
+      : (total > 0 ? Math.round(total / (1 + currentTaxRate / 100)) : 0);
+    const tax = Math.round(baseRoomPrice * (currentTaxRate / 100));
+    const totalAmount = baseRoomPrice + tax;
 
     const isPaid = bk.paymentStatus === 'Paid' || (bk.paidAmount && bk.paidAmount >= total);
 
@@ -42,10 +43,9 @@ export const BillingModule: React.FC = () => {
       checkInDate: bk.checkInDate,
       checkOutDate: bk.checkOutDate,
       baseRoomPrice,
-      securityCharges,
       tax,
-      totalAmount: total + securityCharges,
-      paidAmount: isPaid ? (total + securityCharges) : (bk.paidAmount || 0),
+      totalAmount,
+      paidAmount: isPaid ? totalAmount : (bk.paidAmount || 0),
       paymentStatus: isPaid ? 'Paid' : 'Pending',
       createdAt: bk.createdAt
     };
@@ -65,7 +65,6 @@ export const BillingModule: React.FC = () => {
   // Finance Summary Calculations
   const paidRecords = financeRecords.filter((r) => r.paymentStatus === 'Paid');
   const totalBaseRoomRevenue = paidRecords.reduce((sum, r) => sum + r.baseRoomPrice, 0);
-  const totalSecurityCharges = paidRecords.reduce((sum, r) => sum + r.securityCharges, 0);
   const totalTaxCollected = paidRecords.reduce((sum, r) => sum + r.tax, 0);
   const grandTotalRevenue = paidRecords.reduce((sum, r) => sum + r.totalAmount, 0);
 
@@ -79,50 +78,43 @@ export const BillingModule: React.FC = () => {
           </div>
           <div>
             <h3 className="font-bold text-slate-900 text-base sm:text-lg">Finance & Revenue Section ({financeRecords.length})</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Itemized calculations for Room Price, Security Charges, Taxes, and Revenue</p>
+            <p className="text-xs text-slate-500 mt-0.5">Live calculations for Room Stay Price, Tax ({currentTaxRate}%), and Total Settled Revenue</p>
           </div>
         </div>
       </div>
 
       {/* Finance KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Base Room Price</span>
-            <span className="text-lg sm:text-xl font-black text-slate-900 mt-0.5 block">${totalBaseRoomRevenue.toFixed(2)}</span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 block">${totalBaseRoomRevenue.toFixed(2)}</span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">Nights stay revenue</span>
           </div>
-          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Building2 className="w-5 h-5" />
+          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+            <Building2 className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Security Charges</span>
-            <span className="text-lg sm:text-xl font-black text-amber-600 mt-0.5 block">${totalSecurityCharges.toFixed(2)}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Taxes Collected ({currentTaxRate}%)</span>
+            <span className="text-xl sm:text-2xl font-black text-blue-600 mt-0.5 block">${totalTaxCollected.toFixed(2)}</span>
+            <span className="text-[10px] text-blue-500 mt-0.5 block">Configured in ERP Settings</span>
           </div>
-          <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Taxes Collected (10%)</span>
-            <span className="text-lg sm:text-xl font-black text-blue-600 mt-0.5 block">${totalTaxCollected.toFixed(2)}</span>
-          </div>
-          <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-            <Percent className="w-5 h-5" />
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <Percent className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Grand Total Revenue</span>
-            <span className="text-lg sm:text-xl font-black text-emerald-600 mt-0.5 block">${grandTotalRevenue.toFixed(2)}</span>
+            <span className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 block">${grandTotalRevenue.toFixed(2)}</span>
+            <span className="text-[10px] text-emerald-500 mt-0.5 block">Room Price + Taxes</span>
           </div>
-          <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-            <DollarSign className="w-5 h-5" />
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <DollarSign className="w-6 h-6" />
           </div>
         </div>
       </div>
@@ -163,8 +155,7 @@ export const BillingModule: React.FC = () => {
                 <th className="px-3 py-3">Booking & Guest</th>
                 <th className="px-3 py-3">Room & Stay</th>
                 <th className="px-3 py-3 text-right">Room Price</th>
-                <th className="px-3 py-3 text-right">Security</th>
-                <th className="px-3 py-3 text-right">Tax (10%)</th>
+                <th className="px-3 py-3 text-right">Tax ({currentTaxRate}%)</th>
                 <th className="px-3 py-3 text-right">Total</th>
                 <th className="px-3 py-3 text-right">Payment Status</th>
               </tr>
@@ -172,7 +163,7 @@ export const BillingModule: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                     No financial records found.
                   </td>
                 </tr>
@@ -191,7 +182,6 @@ export const BillingModule: React.FC = () => {
                       <div className="text-[10px] text-slate-500 mt-0.5">{rec.nights} Night(s)</div>
                     </td>
                     <td className="px-3 py-3 font-semibold text-slate-800 text-right">${rec.baseRoomPrice}</td>
-                    <td className="px-3 py-3 font-semibold text-amber-700 text-right">${rec.securityCharges}</td>
                     <td className="px-3 py-3 font-semibold text-blue-700 text-right">${rec.tax}</td>
                     <td className="px-3 py-3 font-black text-slate-900 text-sm text-right">${rec.totalAmount}</td>
                     <td className="px-3 py-3 text-right">

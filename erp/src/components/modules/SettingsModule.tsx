@@ -5,20 +5,52 @@ import {
 } from 'lucide-react';
 
 export const SettingsModule: React.FC = () => {
-  const { showToast } = useHotel();
+  const { hotelSettings, updateHotelSettings, showToast } = useHotel();
   
-  const [hotelName, setHotelName] = useState('Grand Luxe Resort & Spa');
-  const [currency, setCurrency] = useState('USD ($)');
-  const [checkInTime, setCheckInTime] = useState('15:00');
-  const [checkOutTime, setCheckOutTime] = useState('11:00');
-  const [taxRate, setTaxRate] = useState('10.0');
-  const [serviceCharge, setServiceCharge] = useState('5.0');
-  const [autoHousekeepingDispatch, setAutoHousekeepingDispatch] = useState(true);
-  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [hotelName, setHotelName] = useState(hotelSettings?.hotelName || 'Grand Luxe Resort & Spa');
+  const [currency, setCurrency] = useState(hotelSettings?.currency || 'USD ($)');
+  const [checkInTime, setCheckInTime] = useState(hotelSettings?.checkInTime || '15:00');
+  const [checkOutTime, setCheckOutTime] = useState(hotelSettings?.checkOutTime || '11:00');
+  const [taxRate, setTaxRate] = useState(String(hotelSettings?.taxRate ?? 10.0));
+  const [serviceCharge, setServiceCharge] = useState(String(hotelSettings?.serviceCharge ?? 5.0));
+  const [autoHousekeepingDispatch, setAutoHousekeepingDispatch] = useState(hotelSettings?.autoHousekeepingDispatch ?? true);
+  const [emailAlerts, setEmailAlerts] = useState(hotelSettings?.emailAlerts ?? true);
+
+  // Sync state if hotelSettings changes externally
+  React.useEffect(() => {
+    if (hotelSettings) {
+      setHotelName(hotelSettings.hotelName);
+      setCurrency(hotelSettings.currency);
+      setCheckInTime(hotelSettings.checkInTime);
+      setCheckOutTime(hotelSettings.checkOutTime);
+      setTaxRate(String(hotelSettings.taxRate));
+      setServiceCharge(String(hotelSettings.serviceCharge));
+      setAutoHousekeepingDispatch(hotelSettings.autoHousekeepingDispatch);
+      setEmailAlerts(hotelSettings.emailAlerts);
+    }
+  }, [hotelSettings]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    showToast('Configuration Saved', 'System preferences and hotel policy parameters updated successfully.', 'success');
+    const parsedTaxRate = parseFloat(taxRate);
+    const parsedServiceCharge = parseFloat(serviceCharge);
+
+    updateHotelSettings({
+      hotelName,
+      currency,
+      checkInTime,
+      checkOutTime,
+      taxRate: isNaN(parsedTaxRate) ? 10.0 : parsedTaxRate,
+      serviceCharge: isNaN(parsedServiceCharge) ? 5.0 : parsedServiceCharge,
+      autoHousekeepingDispatch,
+      emailAlerts
+    });
+
+    showToast(
+      'Configuration Saved',
+      `Tax rate updated to ${taxRate}% and applied across entire ERP system (Billing, Dashboard, Reports).`,
+      'success'
+    );
   };
 
   return (

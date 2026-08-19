@@ -3,7 +3,7 @@ import {
   User, Room, Guest, Booking, Staff, HousekeepingTask, Invoice, ActivityLog,
   ToastNotification, BookingStatus, RoomStatus, HousekeepingTaskStatus, Role,
   PortalType, MenuItem, RestaurantOrder, MaintenanceRequest, Expense, PayrollRecord,
-  InventoryItem, OrderStatus, MaintenanceStatus
+  InventoryItem, OrderStatus, MaintenanceStatus, HotelSettings
 } from '../types';
 import {
   INITIAL_USERS, INITIAL_ROOMS, INITIAL_GUESTS, INITIAL_BOOKINGS,
@@ -26,6 +26,7 @@ interface HotelContextType {
   activityLogs: ActivityLog[];
   currentUser: User;
   toasts: ToastNotification[];
+  hotelSettings: HotelSettings;
 
   menuItems: MenuItem[];
   restaurantOrders: RestaurantOrder[];
@@ -37,6 +38,9 @@ interface HotelContextType {
 
   // Portal Navigation
   setActivePortal: (portal: PortalType) => void;
+
+  // Settings
+  updateHotelSettings: (settings: Partial<HotelSettings>) => void;
 
   // User Auth & Switch
   setCurrentUser: (user: User) => void;
@@ -141,6 +145,40 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[0]);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+
+  // Persistent Hotel Settings across entire ERP (Tax Rate, Policies, Identity)
+  const [hotelSettings, setHotelSettings] = useState<HotelSettings>(() => {
+    try {
+      const saved = localStorage.getItem('elysia_hotel_settings');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed to parse hotel settings', e);
+    }
+    return {
+      hotelName: 'Grand Luxe Resort & Spa',
+      currency: 'USD ($)',
+      checkInTime: '15:00',
+      checkOutTime: '11:00',
+      taxRate: 10.0,
+      serviceCharge: 5.0,
+      autoHousekeepingDispatch: true,
+      emailAlerts: true
+    };
+  });
+
+  const updateHotelSettings = (newSettings: Partial<HotelSettings>) => {
+    setHotelSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('elysia_hotel_settings', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to persist hotel settings', e);
+      }
+      return updated;
+    });
+  };
 
   // Function to load real data from backend API
   const refreshDataFromBackend = async () => {
@@ -705,6 +743,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         activityLogs,
         currentUser,
         toasts,
+        hotelSettings,
+        updateHotelSettings,
         menuItems,
         restaurantOrders,
         maintenanceRequests,
