@@ -100,6 +100,24 @@ app.use('/api/users',        userRoutes);
 app.use('/api/reports',      reportRoutes);
 app.use('/api/invoices',     invoiceRoutes);
 
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'ELYSIA Hotel Management API',
+    message: 'Backend server is active and running successfully.',
+    endpoints: {
+      health: '/api/health',
+      rooms: '/api/rooms',
+      reservations: '/api/reservations',
+      auth: '/api/auth'
+    }
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.json({ status: 'online', service: 'ELYSIA API Gateway' });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy', service: 'Grand Luxe Hotel Management API' });
 });
