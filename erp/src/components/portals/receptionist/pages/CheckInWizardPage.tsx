@@ -13,11 +13,7 @@ export const CheckInWizardPage: React.FC = () => {
   const pendingCheckIns = bookings.filter(
     (b) =>
       b.status === 'Confirmed' ||
-      b.status === 'confirmed' ||
-      b.status === 'Pending' ||
-      b.status === 'pending' ||
-      b.status === 'Reserved' ||
-      b.status === 'reserved'
+      b.status === 'Pending'
   );
 
   const selectedBooking = bookings.find((b) => b.id === selectedBookingId);

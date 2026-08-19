@@ -16,7 +16,7 @@ export interface User {
 }
 
 export type RoomType = 'Standard' | 'Deluxe' | 'Suite' | 'Presidential Suite' | 'Executive';
-export type BedType = 'Single' | 'Double' | 'King' | 'Twin';
+export type BedType = 'Single' | 'Double' | 'King' | 'Twin' | 'Queen';
 export type RoomStatus = 'Available' | 'Reserved' | 'Occupied' | 'Cleaning' | 'Maintenance';
 
 export interface Room {
@@ -68,6 +68,8 @@ export interface Booking {
   nights: number;
   totalAmount: number;
   paidAmount: number;
+  pricePerNight?: number;
+  paymentStatus?: 'Paid' | 'Pending' | 'Partial';
   status: BookingStatus;
   specialRequests?: string;
   createdAt: string;
@@ -76,7 +78,7 @@ export interface Booking {
   children?: number;
 }
 
-export type Department = 'Reception' | 'Security' | 'Maintenance' | 'Accounts';
+export type Department = 'Reception' | 'Security' | 'Maintenance' | 'Accounts' | 'Housekeeping' | 'Restaurant';
 export type StaffStatus = 'Active' | 'On Leave' | 'Terminated';
 
 export interface Staff {

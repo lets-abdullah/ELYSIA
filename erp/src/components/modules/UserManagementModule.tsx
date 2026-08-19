@@ -49,7 +49,7 @@ export const UserManagementModule: React.FC = () => {
       phone: '',
       username: '',
       password: '',
-      role: 'Staff',
+      role: 'Receptionist',
       status: 'Active'
     });
     setIsModalOpen(true);

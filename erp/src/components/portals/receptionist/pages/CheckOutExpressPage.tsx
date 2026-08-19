@@ -9,12 +9,7 @@ export const CheckOutExpressPage: React.FC = () => {
   const currentTaxRate = hotelSettings?.taxRate !== undefined ? hotelSettings.taxRate : 10.0;
 
   const checkedInBookings = bookings.filter(
-    (b) =>
-      b.status === 'Checked-in' ||
-      b.status === 'checked_in' ||
-      b.status === 'CheckedIn' ||
-      b.status === 'Occupied' ||
-      b.status === 'occupied'
+    (b) => b.status === 'Checked-in'
   );
 
   const selectedBooking = bookings.find((b) => b.id === selectedBookingId);

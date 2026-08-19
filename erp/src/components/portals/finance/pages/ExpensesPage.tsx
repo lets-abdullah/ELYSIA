@@ -8,7 +8,7 @@ export const ExpensesPage: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<'Supplies' | 'Utilities' | 'Maintenance' | 'F&B Ingredients' | 'Marketing' | 'Other'>('Utilities');
+  const [category, setCategory] = useState<'Food Supplies' | 'Utilities' | 'Maintenance' | 'Marketing' | 'Laundry' | 'IT Services' | 'Other'>('Utilities');
   const [amount, setAmount] = useState<number>(450);
   const [vendor, setVendor] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'Bank Transfer' | 'Corporate Card' | 'Petty Cash'>('Bank Transfer');
@@ -21,7 +21,6 @@ export const ExpensesPage: React.FC = () => {
       amount,
       date: new Date().toISOString().split('T')[0],
       vendor,
-      paymentMethod,
       status: 'Paid'
     });
     setShowAddModal(false);
@@ -66,7 +65,7 @@ export const ExpensesPage: React.FC = () => {
                       {exp.category}
                     </span>
                   </div>
-                  <p className="text-slate-500 text-[11px] mt-0.5">Vendor: {exp.vendor} • Paid via {exp.paymentMethod} on {exp.date}</p>
+                  <p className="text-slate-500 text-[11px] mt-0.5">Vendor: {exp.vendor} • {exp.status} on {exp.date}</p>
                 </div>
 
                 <div className="flex items-center gap-3">

@@ -25,7 +25,8 @@ export type TabType =
   | 'bookings'
   | 'staff'
   | 'housekeeping'
-  | 'billing';
+  | 'billing'
+  | 'reports';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -61,9 +62,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`bg-slate-900 text-slate-300 flex flex-col justify-between border-r border-slate-800 transition-all duration-300 z-30 shrink-0 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
+      className={`bg-slate-900 text-slate-300 flex flex-col justify-between border-r border-slate-800 transition-all duration-300 z-30 shrink-0 ${isCollapsed ? 'w-20' : 'w-64'
+        }`}
     >
       {/* Top Brand Section */}
       <div>
@@ -98,17 +98,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-semibold text-sm sm:text-[15px] transition-all duration-200 cursor-pointer group ${
-                  isActive
+                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-semibold text-sm sm:text-[15px] transition-all duration-200 cursor-pointer group ${isActive
                     ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 font-bold shadow-xs'
                     : 'hover:bg-slate-800/70 text-slate-400 hover:text-slate-200'
-                }`}
+                  }`}
                 title={isCollapsed ? item.label : undefined}
               >
                 <Icon
-                  className={`w-5 h-5 shrink-0 transition-transform duration-200 ${
-                    isActive ? 'text-indigo-400 scale-110' : 'group-hover:text-indigo-300'
-                  }`}
+                  className={`w-5 h-5 shrink-0 transition-transform duration-200 ${isActive ? 'text-indigo-400 scale-110' : 'group-hover:text-indigo-300'
+                    }`}
                 />
                 {!isCollapsed && <span className="truncate flex-1 text-left">{item.label}</span>}
 
@@ -138,9 +136,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Active User Switcher Pill */}
         <div
           onClick={onOpenLoginModal}
-          className={`flex items-center gap-3 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 hover:border-indigo-500/50 cursor-pointer transition-all ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
+          className={`flex items-center gap-3 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 hover:border-indigo-500/50 cursor-pointer transition-all ${isCollapsed ? 'justify-center' : ''
+            }`}
           title="Switch User / Role"
         >
           <div className="relative shrink-0">

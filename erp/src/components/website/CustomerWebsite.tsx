@@ -111,6 +111,7 @@ export const CustomerWebsite: React.FC = () => {
 
     // Dispatch New Reservation to ERP Context with Status = Pending
     addBooking({
+      guestId: `web-${Date.now()}`,
       guestName: formData.guestName,
       guestEmail: formData.email,
       guestPhone: formData.phone,

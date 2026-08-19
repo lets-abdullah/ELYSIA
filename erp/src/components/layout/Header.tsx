@@ -76,7 +76,8 @@ export const Header: React.FC<HeaderProps> = ({
     bookings: { title: 'Reservations & Front Desk', subtitle: 'Create reservations, manage check-ins, check-outs, and room assignments' },
     staff: { title: 'Staff & Department HR', subtitle: 'Staff employee records, department shifts, and roster management' },
     housekeeping: { title: 'Housekeeping & Maintenance', subtitle: 'Track room sanitation, dispatch tasks, and mark rooms clean' },
-    billing: { title: 'Billing, Invoices & Folios', subtitle: 'Generate itemized folios, record payments, and manage discounts' }
+    billing: { title: 'Billing, Invoices & Folios', subtitle: 'Generate itemized folios, record payments, and manage discounts' },
+    reports: { title: 'Reports & Analytics', subtitle: 'Revenue trends, occupancy analytics, and audit logs' }
   };
 
   // eslint-disable-next-line security/detect-object-injection -- reviewed, typed internal tab key

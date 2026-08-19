@@ -690,7 +690,7 @@ export const BookingModule: React.FC<{
                   .filter((r) => r.status === 'Available')
                   .map((rm) => (
                     <option key={rm.id} value={rm.id}>
-                      Room #{rm.number} — {rm.type} (${rm.pricePerNight}/night) {rm.type === assignRoomBooking.roomType ? '★ Matches Request' : ''}
+                      Room #{rm.roomNumber} — {rm.type} (${rm.price}/night) {rm.type === assignRoomBooking.roomType ? '★ Matches Request' : ''}
                     </option>
                   ))}
               </select>

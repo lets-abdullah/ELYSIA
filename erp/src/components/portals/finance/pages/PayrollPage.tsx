@@ -37,11 +37,11 @@ export const PayrollPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 text-xs">
               {list.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 font-bold text-slate-900">{p.employeeName}</td>
-                  <td className="p-4 text-slate-600">{p.department} ({p.role})</td>
-                  <td className="p-4 font-mono text-slate-500">{p.monthYear}</td>
+                  <td className="p-4 font-bold text-slate-900">{p.staffName}</td>
+                  <td className="p-4 text-slate-600">{p.department} ({p.position})</td>
+                  <td className="p-4 font-mono text-slate-500">{p.paymentDate || '—'}</td>
                   <td className="p-4 font-bold text-slate-900">${(p.baseSalary ?? 0).toLocaleString()}</td>
-                  <td className="p-4 text-emerald-600 font-bold">+${(p.bonuses ?? 0).toLocaleString()}</td>
+                  <td className="p-4 text-emerald-600 font-bold">+${(p.bonus ?? 0).toLocaleString()}</td>
                   <td className="p-4 text-rose-600 font-bold">-${(p.deductions ?? 0).toLocaleString()}</td>
                   <td className="p-4 font-black text-slate-900 text-sm">${(p.netSalary ?? 0).toLocaleString()}</td>
                   <td className="p-4">

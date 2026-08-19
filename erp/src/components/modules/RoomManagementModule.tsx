@@ -211,7 +211,7 @@ export const RoomManagementModule: React.FC<{
                     <td className="px-6 py-4 whitespace-nowrap">
                       {/* Functional Room Availability Dropdown - Only Available & Reserved */}
                       <select
-                        value={r.status === 'reserved' || r.status === 'Reserved' ? 'Reserved' : 'Available'}
+                        value={r.status === 'Reserved' ? 'Reserved' : 'Available'}
                         onChange={(e) => setRoomStatus(r.id, e.target.value as RoomStatus)}
                         className={`px-3 py-1 text-xs font-bold rounded-xl border cursor-pointer whitespace-nowrap outline-none shadow-xs transition-all ${getStatusBadge(
                           r.status

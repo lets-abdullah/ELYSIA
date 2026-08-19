@@ -435,7 +435,7 @@ export const GuestManagementModule: React.FC = () => {
       <Modal
         isOpen={!!historyCustomer}
         onClose={() => setHistoryCustomer(null)}
-        title={`Booking History — ${historyCustomer?.fullName || historyCustomer?.name || 'Customer'}`}
+        title={`Booking History — ${historyCustomer?.fullName || 'Customer'}`}
       >
         <div className="space-y-4 text-xs">
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">

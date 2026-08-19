@@ -405,11 +405,11 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
                       <td className="px-4 py-3.5 text-slate-600 font-medium">{bk.checkOutDate}</td>
                       <td className="px-4 py-3.5">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${bk.status === 'Checked-in' || bk.status === 'checked_in'
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${bk.status === 'Checked-in'
                             ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                            : bk.status === 'Confirmed' || bk.status === 'confirmed'
+                            : bk.status === 'Confirmed'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              : bk.status === 'Pending' || bk.status === 'pending'
+                              : bk.status === 'Pending'
                                 ? 'bg-rose-100 text-rose-800 border border-rose-200'
                                 : 'bg-slate-100 text-slate-700 border border-slate-200'
                             }`}
