@@ -88,7 +88,7 @@ export const StaffManagementModule: React.FC = () => {
 
     setFormData({
       email: stf.email,
-      password: stf.password || matchedUser?.password || 'password123',
+      password: stf.password || matchedUser?.password || '',
       role: (stf.role || matchedUser?.role || 'Staff') as Role
     });
     setIsModalOpen(true);

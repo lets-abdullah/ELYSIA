@@ -38,8 +38,10 @@ export const LoginScreen: React.FC = () => {
         body: JSON.stringify({ email: cleanEmail, password: cleanPassword })
       });
 
-      if (res.success && res.token && res.user) {
-        setAuthToken(res.token);
+      if (res && res.success && res.user) {
+        if (res.token) {
+          setAuthToken(res.token);
+        }
         localStorage.setItem('elysia_user_role', res.user.role || '');
 
         let userRole: Role = 'Admin';
@@ -74,39 +76,15 @@ export const LoginScreen: React.FC = () => {
         refreshDataFromBackend();
         return;
       } else {
-        const msg = res.message || 'Invalid credentials.';
+        const msg = res?.message || 'Invalid email or password.';
         setErrorMessage(msg);
         showToast('Login Failed', msg, 'error');
-        setIsSubmitting(false);
         return;
       }
     } catch (err: any) {
-      if (err.status || err.message?.includes('credentials') || err.message?.includes('inactive') || err.message?.includes('required')) {
-        const msg = err.message || 'Invalid email or password.';
-        setErrorMessage(msg);
-        showToast('Login Failed', msg, 'error');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Offline mode fallback: Validate against user store credentials
-      const matchedUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
-      const expectedPass = matchedUser?.password;
-
-      if (!matchedUser || (expectedPass && cleanPassword !== expectedPass)) {
-        setErrorMessage('Invalid credentials. Email and password do not match.');
-        showToast('Login Failed', 'Invalid email or password.', 'error');
-        setIsSubmitting(false);
-        return;
-      }
-
-      let targetPortal: Exclude<PortalType, 'login' | 'website'> = 'admin';
-      if (matchedUser.role === 'Manager') targetPortal = 'manager';
-      else if (matchedUser.role === 'Receptionist') targetPortal = 'receptionist';
-
-      setCurrentUser(matchedUser);
-      setActivePortal(targetPortal);
-      showToast('Authentication Success', `Welcome back, ${matchedUser.name}! (Offline)`, 'success');
+      const msg = err.message || 'Unable to connect to the authentication server. Please ensure the backend is online.';
+      setErrorMessage(msg);
+      showToast('Login Failed', msg, 'error');
     } finally {
       setIsSubmitting(false);
     }

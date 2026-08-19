@@ -582,7 +582,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       username: staffData.email.split('@')[0],
       role: staffData.role || 'Receptionist',
       status: 'Active',
-      password: staffData.password || 'password123'
+      password: staffData.password
     });
   };
 
