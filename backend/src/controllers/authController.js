@@ -3,14 +3,24 @@ import jwt from 'jsonwebtoken';
 import { query } from '../db/pool.js';
 import { JWT_SECRET } from '../middleware/auth.js';
 
-function setAuthCookie(res, token) {
+function getCookieOptions() {
   const isProduction = process.env.NODE_ENV === 'production';
-  res.cookie('token', token, {
+  return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24h
-  });
+  };
+}
+
+function setAuthCookie(res, token) {
+  res.cookie('token', token, getCookieOptions());
+}
+
+export function clearAuthCookie(res) {
+  const opts = getCookieOptions();
+  delete opts.maxAge;
+  res.clearCookie('token', opts);
 }
 
 export async function login(req, res) {
@@ -176,6 +186,15 @@ export async function register(req, res) {
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ success: false, message: 'Server error during registration.' });
+  }
+}
+
+export async function logout(req, res) {
+  try {
+    clearAuthCookie(res);
+    return res.json({ success: true, message: 'Logged out successfully.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error during logout.' });
   }
 }
 

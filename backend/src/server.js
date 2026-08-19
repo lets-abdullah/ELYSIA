@@ -202,24 +202,28 @@ async function runSeed() {
   const userCount = await query('SELECT COUNT(*) FROM users');
   if (parseInt(userCount.rows[0].count, 10) === 0) {
     console.log('🌱 Seeding default staff users...');
-    const adminPass = process.env.SEED_ADMIN_PASSWORD || 'Admin@GrandLuxe2026!';
-    const managerPass = process.env.SEED_MANAGER_PASSWORD || 'Manager@GrandLuxe2026!';
-    const receptionPass = process.env.SEED_RECEPTIONIST_PASSWORD || 'Reception@GrandLuxe2026!';
+    const adminPass = process.env.SEED_ADMIN_PASSWORD;
+    const managerPass = process.env.SEED_MANAGER_PASSWORD;
+    const receptionPass = process.env.SEED_RECEPTIONIST_PASSWORD;
 
-    const salt = bcrypt.genSaltSync(10);
-    const users = [
-      ['usr-1', 'Alexander Wright', 'a.wright@grandluxe.com', bcrypt.hashSync(adminPass, salt),      'admin',        '+1 (555) 019-2831', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'],
-      ['usr-2', 'Elena Rostova',    'e.rostova@grandluxe.com', bcrypt.hashSync(managerPass, salt),    'manager',      '+1 (555) 012-9844', 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80'],
-      ['usr-3', 'Marcus Sterling',  'm.sterling@grandluxe.com', bcrypt.hashSync(receptionPass, salt), 'receptionist', '+1 (555) 014-3321', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80']
-    ];
-    for (const [id, name, email, hash, role, phone, avatar] of users) {
-      await query(
-        `INSERT INTO users (id, name, email, password_hash, role, phone, status, avatar)
-         VALUES ($1,$2,$3,$4,$5,$6,'active',$7) ON CONFLICT (id) DO NOTHING`,
-        [id, name, email, hash, role, phone, avatar]
-      );
+    if (adminPass && managerPass && receptionPass) {
+      const salt = bcrypt.genSaltSync(10);
+      const users = [
+        ['usr-1', 'Alexander Wright', 'a.wright@grandluxe.com', bcrypt.hashSync(adminPass, salt),      'admin',        '+1 (555) 019-2831', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'],
+        ['usr-2', 'Elena Rostova',    'e.rostova@grandluxe.com', bcrypt.hashSync(managerPass, salt),    'manager',      '+1 (555) 012-9844', 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80'],
+        ['usr-3', 'Marcus Sterling',  'm.sterling@grandluxe.com', bcrypt.hashSync(receptionPass, salt), 'receptionist', '+1 (555) 014-3321', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80']
+      ];
+      for (const [id, name, email, hash, role, phone, avatar] of users) {
+        await query(
+          `INSERT INTO users (id, name, email, password_hash, role, phone, status, avatar)
+           VALUES ($1,$2,$3,$4,$5,$6,'active',$7) ON CONFLICT (id) DO NOTHING`,
+          [id, name, email, hash, role, phone, avatar]
+        );
+      }
+      console.log('  ✅ 3 staff users seeded.');
+    } else {
+      console.log('  ℹ️ Staff user seeding skipped: SEED_ADMIN_PASSWORD, SEED_MANAGER_PASSWORD, or SEED_RECEPTIONIST_PASSWORD not set in environment.');
     }
-    console.log('  ✅ 3 staff users seeded.');
   }
 
   // Seed rooms

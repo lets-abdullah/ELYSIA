@@ -89,17 +89,11 @@ export const LoginScreen: React.FC = () => {
         return;
       }
 
-      // Offline mode fallback: Only allow login if BOTH email AND password match known credentials
-      const PRODUCTION_PASSWORDS: Record<string, string> = {
-        'a.wright@grandluxe.com': 'Admin@GrandLuxe2026!',
-        'e.rostova@grandluxe.com': 'Manager@GrandLuxe2026!',
-        'm.sterling@grandluxe.com': 'Reception@GrandLuxe2026!'
-      };
-
+      // Offline mode fallback: Validate against user store credentials
       const matchedUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
-      const expectedPass = PRODUCTION_PASSWORDS[cleanEmail];
+      const expectedPass = matchedUser?.password;
 
-      if (!matchedUser || !expectedPass || cleanPassword !== expectedPass) {
+      if (!matchedUser || (expectedPass && cleanPassword !== expectedPass)) {
         setErrorMessage('Invalid credentials. Email and password do not match.');
         showToast('Login Failed', 'Invalid email or password.', 'error');
         setIsSubmitting(false);

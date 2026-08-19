@@ -60,7 +60,8 @@ import { API_BASE_URL } from '../config/api';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('elysia_cust_token'));
+  // In-memory token only (never stored in localStorage)
+  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('elysia_cust_user');
     return saved ? JSON.parse(saved) : null;
@@ -72,11 +73,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userReservations, setUserReservations] = useState<UserReservation[]>([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
 
-  // Sync token to localStorage
+  // Sync user profile state (JWT is kept in HttpOnly Cookie, NEVER in localStorage)
   const saveSession = (newToken: string, newUser: UserProfile) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('elysia_cust_token', newToken);
+    localStorage.removeItem('elysia_cust_token'); // Ensure JWT is purged from localStorage
     localStorage.setItem('elysia_cust_user', JSON.stringify(newUser));
   };
 
@@ -88,34 +89,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('elysia_cust_user');
   };
 
-  // Validate token on mount
+  // Validate session on mount via HttpOnly cookie
   useEffect(() => {
-    if (token) {
-      fetch(`${API_BASE_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include'
+    // Purge any legacy tokens stored in localStorage
+    localStorage.removeItem('elysia_cust_token');
+
+    fetch(`${API_BASE_URL}/auth/me`, {
+      credentials: 'include'
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.user) {
+          setUser(data.user);
+          localStorage.setItem('elysia_cust_user', JSON.stringify(data.user));
+        } else {
+          clearSession();
+        }
       })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.user) {
-            setUser(data.user);
-            localStorage.setItem('elysia_cust_user', JSON.stringify(data.user));
-          } else {
-            clearSession();
-          }
-        })
-        .catch(() => {
-          // Keep cached user if server is briefly offline
-        });
-    }
+      .catch(() => {
+        // Keep cached profile if backend is temporarily unreachable
+      });
   }, []);
 
   const fetchMyReservations = async () => {
-    if (!token) return;
+    if (!user) return;
     setLoadingReservations(true);
     try {
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const res = await fetch(`${API_BASE_URL}/reservations/my-reservations`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
         credentials: 'include'
       });
       const data = await res.json();
@@ -130,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    if (user && token) {
+    if (user) {
       fetchMyReservations();
       const interval = setInterval(fetchMyReservations, 3000); // 3-second real-time sync with database!
       return () => clearInterval(interval);
@@ -182,20 +187,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    clearSession();
-    setIsProfileModalOpen(false);
+  const logout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      clearSession();
+      setIsProfileModalOpen(false);
+    }
   };
 
   const updateProfile = async (name: string, phone: string, pass?: string) => {
-    if (!token) return { success: false, message: 'Not logged in' };
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers,
         credentials: 'include',
         body: JSON.stringify({ name, phone, password: pass })
       });
@@ -218,7 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const closeAuthModal = () => setIsAuthModalOpen(false);
   const openProfileModal = () => {
-    if (token && user) {
+    if (user) {
       fetchMyReservations();
       setIsProfileModalOpen(true);
     } else {
@@ -232,7 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         token,
-        isAuthenticated: !!user && !!token,
+        isAuthenticated: !!user,
         isAuthModalOpen,
         isProfileModalOpen,
         authModalTab,

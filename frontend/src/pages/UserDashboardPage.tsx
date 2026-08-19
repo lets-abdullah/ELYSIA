@@ -13,7 +13,7 @@ interface UserDashboardPageProps {
 }
 
 export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate }) => {
-  const { user, userReservations, logout, isAuthenticated } = useAuth();
+  const { user, userReservations, logout, isAuthenticated, updateProfile } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'reservations' | 'payments' | 'notifications' | 'support'>('overview');
 
@@ -87,34 +87,13 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
     setProfileSuccessMsg(null);
     setUpdatingProfile(true);
 
-    try {
-      const token = localStorage.getItem('elysia_cust_token');
-      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: profileName,
-          phone: profilePhone
-        })
-      });
+    const res = await updateProfile(profileName, profilePhone);
+    setUpdatingProfile(false);
 
-      const data = await res.json();
-      setUpdatingProfile(false);
-
-      if (data.success) {
-        setProfileSuccessMsg('Profile details updated successfully!');
-        if (data.user) {
-          localStorage.setItem('elysia_cust_user', JSON.stringify(data.user));
-        }
-      } else {
-        setProfileErrMsg(data.message || 'Failed to update profile.');
-      }
-    } catch (err) {
-      setUpdatingProfile(false);
-      setProfileErrMsg('Network error. Please try again.');
+    if (res.success) {
+      setProfileSuccessMsg('Profile details updated successfully!');
+    } else {
+      setProfileErrMsg(res.message || 'Failed to update profile.');
     }
   };
 
@@ -149,32 +128,15 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
     }
 
     setChangingPass(true);
-    try {
-      const token = localStorage.getItem('elysia_cust_token');
-      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          password: newPassword
-        })
-      });
+    const res = await updateProfile(profileName, profilePhone, newPassword);
+    setChangingPass(false);
 
-      const data = await res.json();
-      setChangingPass(false);
-
-      if (data.success) {
-        setPassSuccessMsg('Password changed successfully!');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        setPassErrMsg(data.message || 'Failed to change password.');
-      }
-    } catch (err) {
-      setChangingPass(false);
-      setPassErrMsg('Network error. Please try again.');
+    if (res.success) {
+      setPassSuccessMsg('Password changed successfully!');
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      setPassErrMsg(res.message || 'Failed to change password.');
     }
   };
 

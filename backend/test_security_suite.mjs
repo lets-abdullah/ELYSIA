@@ -1,12 +1,12 @@
 import http from 'http';
 import jwt from 'jsonwebtoken';
 
-process.env.JWT_SECRET = 'test_audit_secret_key_1234567890!';
-process.env.DB_HOST = '127.0.0.1';
-process.env.DB_PORT = '5432';
-process.env.DB_NAME = 'hotel_test_db';
-process.env.DB_USER = 'postgres';
-process.env.DB_PASSWORD = 'test_password_123';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file (git ignored)
+dotenv.config();
+
+// Ensure test execution environment mode
 process.env.NODE_ENV = 'test';
 
 const { default: app } = await import('./src/server.js');
