@@ -122,24 +122,34 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onSelectDetails, onBoo
 
         {/* Bottom Actions */}
         <div className="pt-4 border-t border-[#E5E5E5] flex items-center justify-between gap-3">
-          <button
-            onClick={() => onSelectDetails(room)}
-            className="text-[11px] uppercase tracking-[0.18em] font-semibold text-[#1A1A1A] hover:text-[#C5B358] transition-colors cursor-pointer flex items-center gap-1 group/btn"
-          >
-            Room Details
-            <ArrowRight className="w-3.5 h-3.5 text-[#C5B358] group-hover/btn:translate-x-1 transition-transform" />
-          </button>
+          {!isReserved ? (
+            <>
+              <button
+                onClick={() => onSelectDetails(room)}
+                className="text-[11px] uppercase tracking-[0.18em] font-semibold text-[#1A1A1A] hover:text-[#C5B358] transition-colors cursor-pointer flex items-center gap-1 group/btn"
+              >
+                Room Details
+                <ArrowRight className="w-3.5 h-3.5 text-[#C5B358] group-hover/btn:translate-x-1 transition-transform" />
+              </button>
 
-          <button
-            onClick={handleBookNowClick}
-            className={`px-4 py-2 text-[10px] uppercase tracking-[0.18em] font-semibold transition-all duration-200 shrink-0 cursor-pointer ${
-              isReserved
-                ? 'bg-rose-950/80 text-rose-300 border border-rose-800/60'
-                : 'bg-[#1A1A1A] text-white hover:bg-[#C5B358] hover:text-[#1A1A1A]'
-            }`}
-          >
-            {isReserved ? 'RESERVED' : 'BOOK NOW'}
-          </button>
+              <button
+                onClick={handleBookNowClick}
+                className="px-4 py-2 text-[10px] uppercase tracking-[0.18em] font-semibold transition-all duration-200 shrink-0 cursor-pointer bg-[#1A1A1A] text-white hover:bg-[#C5B358] hover:text-[#1A1A1A]"
+              >
+                BOOK NOW
+              </button>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-between py-1">
+              <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                Currently Reserved
+              </span>
+              <span className="px-3 py-1.5 text-[9px] uppercase tracking-[0.18em] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                UNAVAILABLE
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </article>
