@@ -37,7 +37,8 @@ coverage/
 
 # Audit & Local Non-Code Files
 SECURITY_AUDIT_REPORT.md
-Consolidated_Security_Report.pdf
+Consolidated_Security_Report*.pdf
+*.pdf
 claude.md
 pdf_images/
 

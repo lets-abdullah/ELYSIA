@@ -63,10 +63,21 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
+      
+      // Check explicit allowed origins
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error(`Origin ${origin} not allowed by CORS policy.`));
+      
+      // Allow any localhost / 127.0.0.1 port and *.vercel.app preview URLs
+      const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      const isVercel = /^https:\/\/[a-zA-Z0-9_-]+\.vercel\.app$/.test(origin);
+      
+      if (isLocalhost || isVercel) {
+        return callback(null, true);
+      }
+      
+      return callback(null, false);
     },
     credentials: true
   })

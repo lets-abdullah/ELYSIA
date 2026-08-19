@@ -153,7 +153,9 @@ export async function updateRoom(req, res) {
         body.bedType || body.bed_type || r.bed_type,
         body.price !== undefined ? parseFloat(body.price) : parseFloat(r.price),
         body.capacity !== undefined ? parseInt(body.capacity, 10) : r.capacity,
-        body.amenities !== undefined ? JSON.stringify(Array.isArray(body.amenities) ? body.amenities : []) : r.amenities,
+        body.amenities !== undefined
+          ? JSON.stringify(Array.isArray(body.amenities) ? body.amenities : [])
+          : (typeof r.amenities === 'string' ? r.amenities : JSON.stringify(r.amenities || [])),
         body.status || r.status,
         body.notes !== undefined ? body.notes : r.notes,
         body.image || r.image

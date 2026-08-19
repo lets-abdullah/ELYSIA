@@ -124,8 +124,8 @@ export const LoginScreen: React.FC = () => {
       {/* Animated Lightfall Background - UNTOUCHED */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <Lightfall
-          color="#6366f1"
-          intensity={1.2}
+          colors={['#6366f1', '#4f46e5']}
+          glow={1.2}
           speed={0.6}
           className="w-full h-full"
         />
