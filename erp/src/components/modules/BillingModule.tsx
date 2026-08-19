@@ -18,6 +18,11 @@ export const BillingModule: React.FC = () => {
   // Calculate Finance Records from active bookings
   const financeRecords = (bookings || []).map((bk) => {
     const total = bk.totalAmount || 0;
+    // Calculate nights dynamically from check-in/check-out dates
+    const nights = bk.nights || (bk.checkInDate && bk.checkOutDate
+      ? Math.max(1, Math.ceil((new Date(bk.checkOutDate).getTime() - new Date(bk.checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
+      : 1);
+
     // Calculate 10% tax, $150 security deposit, and base room price
     const tax = Math.round(total * 0.1);
     const securityCharges = 150;
@@ -33,7 +38,7 @@ export const BillingModule: React.FC = () => {
       guestEmail: bk.guestEmail,
       roomNumber: bk.roomNumber || '101',
       roomType: bk.roomType || 'Hotel Bedroom',
-      nights: bk.nights || 1,
+      nights,
       checkInDate: bk.checkInDate,
       checkOutDate: bk.checkOutDate,
       baseRoomPrice,

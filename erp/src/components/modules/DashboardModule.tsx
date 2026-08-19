@@ -55,14 +55,16 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   const occupancyRate = totalRooms > 0 ? Math.round(((occupiedRooms + reservedRooms) / totalRooms) * 100) : 0;
   const totalGuests = guests.length;
 
-  // Calculate revenue ONLY from Paid bookings and Paid invoices
-  const totalRevenue =
-    (bookings || [])
-      .filter((b) => b.paymentStatus === 'Paid' || (b.paidAmount && b.paidAmount > 0))
-      .reduce((sum, b) => sum + (b.paidAmount || 0), 0) +
-    (invoices || [])
-      .filter((inv) => inv?.status === 'Paid')
-      .reduce((sum, inv) => sum + (inv?.paidAmount || 0), 0);
+  // Calculate revenue from Paid bookings (Base Price based on nights + 10% tax + $150 security deposit)
+  const totalRevenue = (bookings || [])
+    .filter((b) => b.paymentStatus === 'Paid' || (b.paidAmount && b.paidAmount > 0))
+    .reduce((sum, bk) => {
+      const total = bk.totalAmount || 0;
+      const securityCharges = 150;
+      const grandTotal = total + securityCharges;
+      const isPaid = bk.paymentStatus === 'Paid' || (bk.paidAmount && bk.paidAmount >= total);
+      return sum + (isPaid ? grandTotal : (bk.paidAmount || 0));
+    }, 0);
 
   // Generate multi-point Daily Revenue Trend (Last 7 Days)
   const getDailyRevenueChartData = () => {

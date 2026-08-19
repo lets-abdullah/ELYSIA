@@ -33,8 +33,16 @@ export const ReportsModule: React.FC = () => {
   const { rooms, guests, staff, bookings, invoices } = useHotel();
   const [activeReport, setActiveReport] = useState<ReportTab>('revenue');
 
-  // Revenue analytics from live bookings and invoices
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.paidAmount || b.totalAmount || 0), 0) + invoices.reduce((sum, i) => sum + i.paidAmount, 0);
+  // Revenue analytics from live bookings (Price per night * nights + 10% tax + $150 security deposit)
+  const totalRevenue = (bookings || [])
+    .filter((b) => b.paymentStatus === 'Paid' || (b.paidAmount && b.paidAmount > 0))
+    .reduce((sum, bk) => {
+      const total = bk.totalAmount || 0;
+      const securityCharges = 150;
+      const grandTotal = total + securityCharges;
+      const isPaid = bk.paymentStatus === 'Paid' || (bk.paidAmount && bk.paidAmount >= total);
+      return sum + (isPaid ? grandTotal : (bk.paidAmount || 0));
+    }, 0);
 
   const monthlyRevenueData = [
     { month: 'Current Period', revenue: totalRevenue, expenses: Math.round(totalRevenue * 0.35) }
