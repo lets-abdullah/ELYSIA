@@ -122,6 +122,50 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy', service: 'Grand Luxe Hotel Management API' });
 });
 
+// ── Ensure DB Schema & Seed on Vercel Serverless ──────────────────────────────
+let dbInitPromise = null;
+export async function ensureDbReady() {
+  if (!dbInitPromise) {
+    dbInitPromise = (async () => {
+      try {
+        await runSchema();
+        await runSeed();
+      } catch (err) {
+        console.error('ensureDbReady error:', err.message);
+        dbInitPromise = null; // reset to allow retry
+      }
+    })();
+  }
+  return dbInitPromise;
+}
+
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbReady();
+  } catch (e) {
+    // proceed to request
+  }
+  next();
+});
+
+app.get('/api/init', async (req, res) => {
+  try {
+    await runSchema();
+    await runSeed();
+    const userCount = await query('SELECT COUNT(*) FROM users');
+    const roomCount = await query('SELECT COUNT(*) FROM rooms');
+    res.json({
+      success: true,
+      message: 'Database schema and seed verified successfully.',
+      usersCount: parseInt(userCount.rows[0].count, 10),
+      roomsCount: parseInt(roomCount.rows[0].count, 10)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 // ── PostgreSQL schema auto-migration ──────────────────────────────────────────
 async function runSchema() {
   const schemaPath = path.join(__dirname, 'db', 'schema.sql');
