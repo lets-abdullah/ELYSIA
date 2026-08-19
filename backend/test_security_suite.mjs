@@ -159,7 +159,7 @@ async function runSecurityTests() {
     { path: '/api/auth/register', method: 'POST', headers: { 'Content-Type': 'application/json' } },
     { name: 'Weak Pass User', email: 'weak@example.com', password: '123' }
   );
-  assertTest('Weak password (< 8 chars) in register rejected with 400', shortPasswordRegister.statusCode === 400);
+  assertTest('Weak password (< 12 chars / missing complexity) in register rejected with 400', shortPasswordRegister.statusCode === 400);
 
   // ── TEST GROUP 5: Reservation Status Enum Whitelisting ──────────────────────
   console.log('\n--- 5. Reservation Status Whitelist Validation ---');

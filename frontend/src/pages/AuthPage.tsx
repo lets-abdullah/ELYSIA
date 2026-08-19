@@ -94,16 +94,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
     }
 
     // 3. Password validation:
-    // - At least 8 characters
+    // - At least 12 characters
     // - At least 1 uppercase letter (A-Z)
+    // - At least 1 lowercase letter (a-z)
     // - At least 1 number (0-9)
     // - At least 1 special character/symbol
-    if (regPassword.length < 8) {
-      setErrorMessage('Password must be at least 8 characters long.');
+    if (regPassword.length < 12) {
+      setErrorMessage('Password must be at least 12 characters long.');
       return;
     }
     if (!/[A-Z]/.test(regPassword)) {
       setErrorMessage('Password must contain at least 1 uppercase letter (A–Z).');
+      return;
+    }
+    if (!/[a-z]/.test(regPassword)) {
+      setErrorMessage('Password must contain at least 1 lowercase letter (a–z).');
       return;
     }
     if (!/[0-9]/.test(regPassword)) {
@@ -111,7 +116,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
       return;
     }
     if (!/[^A-Za-z0-9]/.test(regPassword)) {
-      setErrorMessage('Password must contain at least 1 special character/symbol (e.g. @, #, $, !).');
+      setErrorMessage('Password must contain at least 1 symbol/special character (e.g. @, #, $, !).');
       return;
     }
 
@@ -136,8 +141,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
   };
 
   // Password requirement check helper flags
-  const hasMinLength = regPassword.length >= 8;
+  const hasMinLength = regPassword.length >= 12;
   const hasUpperCase = /[A-Z]/.test(regPassword);
+  const hasLowerCase = /[a-z]/.test(regPassword);
   const hasNumber = /[0-9]/.test(regPassword);
   const hasSpecial = /[^A-Za-z0-9]/.test(regPassword);
   const hasValidPhone = /^\d{11}$/.test(regPhone);
@@ -331,7 +337,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
 
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-stone-600 mb-1.5 font-bold">
-                Password * (Min 8 chars)
+                Password * (Min 12 chars)
               </label>
               <div className="relative">
                 <input
@@ -361,13 +367,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
                     <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${hasMinLength ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
                       {hasMinLength ? '✓' : '•'}
                     </span>
-                    At least 8 characters long
+                    At least 12 characters long
                   </div>
                   <div className={`flex items-center gap-2 transition-colors ${hasUpperCase ? 'text-emerald-700 font-medium' : 'text-stone-500'}`}>
                     <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${hasUpperCase ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
                       {hasUpperCase ? '✓' : '•'}
                     </span>
                     At least 1 uppercase letter (A–Z)
+                  </div>
+                  <div className={`flex items-center gap-2 transition-colors ${hasLowerCase ? 'text-emerald-700 font-medium' : 'text-stone-500'}`}>
+                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${hasLowerCase ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
+                      {hasLowerCase ? '✓' : '•'}
+                    </span>
+                    At least 1 lowercase letter (a–z)
                   </div>
                   <div className={`flex items-center gap-2 transition-colors ${hasNumber ? 'text-emerald-700 font-medium' : 'text-stone-500'}`}>
                     <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${hasNumber ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
@@ -379,7 +391,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
                     <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${hasSpecial ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
                       {hasSpecial ? '✓' : '•'}
                     </span>
-                    At least 1 special character/symbol (@, #, $, !, etc.)
+                    At least 1 symbol/special character (@, #, $, !, etc.)
                   </div>
                 </div>
               )}

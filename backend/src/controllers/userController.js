@@ -73,10 +73,16 @@ export async function createUser(req, res) {
     }
 
     const trimmedPassword = password.trim();
-    if (trimmedPassword.length < 8 || !/[a-zA-Z]/.test(trimmedPassword) || !/[0-9]/.test(trimmedPassword)) {
+    const hasMinLength = trimmedPassword.length >= 12;
+    const hasUpperCase = /[A-Z]/.test(trimmedPassword);
+    const hasLowerCase = /[a-z]/.test(trimmedPassword);
+    const hasNumber = /[0-9]/.test(trimmedPassword);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(trimmedPassword);
+
+    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 8 characters long and contain both letters and numbers.'
+        message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
       });
     }
 
@@ -169,10 +175,16 @@ export async function updateUser(req, res) {
     let hashedPassword = u.password_hash;
     if (password && password.trim() !== '') {
       const trimmedPass = password.trim();
-      if (trimmedPass.length < 8 || !/[a-zA-Z]/.test(trimmedPass) || !/[0-9]/.test(trimmedPass)) {
+      const hasMinLength = trimmedPass.length >= 12;
+      const hasUpperCase = /[A-Z]/.test(trimmedPass);
+      const hasLowerCase = /[a-z]/.test(trimmedPass);
+      const hasNumber = /[0-9]/.test(trimmedPass);
+      const hasSpecialChar = /[^A-Za-z0-9]/.test(trimmedPass);
+
+      if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 8 characters long and contain both letters and numbers.'
+          message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
         });
       }
       const salt = bcrypt.genSaltSync(10);

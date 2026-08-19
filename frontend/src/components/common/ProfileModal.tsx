@@ -357,7 +357,7 @@ export const ProfileModal: React.FC = () => {
                     type="password"
                     value={editPass}
                     onChange={(e) => setEditPass(e.target.value)}
-                    placeholder="New Password (Min 6 characters)"
+                    placeholder="New Password (Min 12 characters)"
                     className="w-full pl-9 pr-4 py-2 bg-[#262626] border border-[#444444] text-xs text-white focus:outline-none focus:border-[#C5B358]"
                   />
                   <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

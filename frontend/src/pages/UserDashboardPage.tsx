@@ -123,12 +123,16 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
     setPassErrMsg(null);
     setPassSuccessMsg(null);
 
-    if (newPassword.length < 8) {
-      setPassErrMsg('Password must be at least 8 characters long.');
+    if (newPassword.length < 12) {
+      setPassErrMsg('Password must be at least 12 characters long.');
       return;
     }
     if (!/[A-Z]/.test(newPassword)) {
       setPassErrMsg('Password must contain at least 1 uppercase letter (A–Z).');
+      return;
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setPassErrMsg('Password must contain at least 1 lowercase letter (a–z).');
       return;
     }
     if (!/[0-9]/.test(newPassword)) {
@@ -136,7 +140,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
       return;
     }
     if (!/[^A-Za-z0-9]/.test(newPassword)) {
-      setPassErrMsg('Password must contain at least 1 special character/symbol (e.g. @, #, $, !).');
+      setPassErrMsg('Password must contain at least 1 symbol/special character (e.g. @, #, $, !).');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -627,7 +631,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
 
                 <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">New Password (Min 8 chars)</label>
+                    <label className="block text-slate-700 font-bold mb-1">New Password (Min 12 chars)</label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? 'text' : 'password'}

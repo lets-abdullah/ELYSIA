@@ -45,13 +45,27 @@ export const StaffManagementModule: React.FC = () => {
     role: 'Receptionist' as Role
   });
 
-  const handleGeneratePassword = () => {
-    const chars = 'abcdefghjkmnpqrstuvwxyz23456789@#$';
-    let newPass = '';
-    for (let i = 0; i < 8; i++) {
-      newPass += chars.charAt(Math.floor(Math.random() * chars.length));
+  const generateSecurePassword = () => {
+    const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowers = 'abcdefghjkmnpqrstuvwxyz';
+    const numbers = '23456789';
+    const symbols = '!@#$%^&*';
+    const all = uppers + lowers + numbers + symbols;
+
+    let pass =
+      uppers.charAt(Math.floor(Math.random() * uppers.length)) +
+      lowers.charAt(Math.floor(Math.random() * lowers.length)) +
+      numbers.charAt(Math.floor(Math.random() * numbers.length)) +
+      symbols.charAt(Math.floor(Math.random() * symbols.length));
+
+    for (let i = 4; i < 14; i++) {
+      pass += all.charAt(Math.floor(Math.random() * all.length));
     }
-    setFormData((prev) => ({ ...prev, password: newPass }));
+    return pass.split('').sort(() => 0.5 - Math.random()).join('');
+  };
+
+  const handleGeneratePassword = () => {
+    setFormData((prev) => ({ ...prev, password: generateSecurePassword() }));
   };
 
   const handleOpenAddModal = () => {
@@ -59,7 +73,7 @@ export const StaffManagementModule: React.FC = () => {
     setShowPassword(true);
     setFormData({
       email: '',
-      password: 'pass' + Math.floor(1000 + Math.random() * 9000),
+      password: generateSecurePassword(),
       role: 'Receptionist'
     });
     setIsModalOpen(true);

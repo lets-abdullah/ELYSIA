@@ -88,16 +88,21 @@ export const AuthModal: React.FC = () => {
     }
 
     // 3. Password validation:
-    // - At least 8 characters
+    // - At least 12 characters
     // - At least 1 uppercase letter (A-Z)
+    // - At least 1 lowercase letter (a-z)
     // - At least 1 number (0-9)
     // - At least 1 special character/symbol
-    if (regPassword.length < 8) {
-      setErrorMessage('Password must be at least 8 characters long.');
+    if (regPassword.length < 12) {
+      setErrorMessage('Password must be at least 12 characters long.');
       return;
     }
     if (!/[A-Z]/.test(regPassword)) {
       setErrorMessage('Password must contain at least 1 uppercase letter (A–Z).');
+      return;
+    }
+    if (!/[a-z]/.test(regPassword)) {
+      setErrorMessage('Password must contain at least 1 lowercase letter (a–z).');
       return;
     }
     if (!/[0-9]/.test(regPassword)) {
@@ -105,7 +110,7 @@ export const AuthModal: React.FC = () => {
       return;
     }
     if (!/[^A-Za-z0-9]/.test(regPassword)) {
-      setErrorMessage('Password must contain at least 1 special character/symbol (e.g. @, #, $, !).');
+      setErrorMessage('Password must contain at least 1 symbol/special character (e.g. @, #, $, !).');
       return;
     }
 
@@ -127,8 +132,9 @@ export const AuthModal: React.FC = () => {
   };
 
   // Password requirement check helper flags
-  const hasMinLength = regPassword.length >= 8;
+  const hasMinLength = regPassword.length >= 12;
   const hasUpperCase = /[A-Z]/.test(regPassword);
+  const hasLowerCase = /[a-z]/.test(regPassword);
   const hasNumber = /[0-9]/.test(regPassword);
   const hasSpecial = /[^A-Za-z0-9]/.test(regPassword);
 
@@ -312,7 +318,7 @@ export const AuthModal: React.FC = () => {
 
             <div>
               <label className="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">
-                Password * (Min 8 chars)
+                Password * (Min 12 chars)
               </label>
               <div className="relative">
                 <input
@@ -339,16 +345,19 @@ export const AuthModal: React.FC = () => {
                 <div className="mt-2 p-2.5 bg-[#141414] border border-[#333333] space-y-1 text-[10px]">
                   <div className="font-semibold text-slate-300 mb-0.5">Password Requirements:</div>
                   <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-[#C5B358]' : 'text-slate-500'}`}>
-                    <span>{hasMinLength ? '✓' : '•'}</span> At least 8 characters
+                    <span>{hasMinLength ? '✓' : '•'}</span> At least 12 characters
                   </div>
                   <div className={`flex items-center gap-1.5 ${hasUpperCase ? 'text-[#C5B358]' : 'text-slate-500'}`}>
                     <span>{hasUpperCase ? '✓' : '•'}</span> 1 uppercase letter (A–Z)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasLowerCase ? 'text-[#C5B358]' : 'text-slate-500'}`}>
+                    <span>{hasLowerCase ? '✓' : '•'}</span> 1 lowercase letter (a–z)
                   </div>
                   <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-[#C5B358]' : 'text-slate-500'}`}>
                     <span>{hasNumber ? '✓' : '•'}</span> 1 number (0–9)
                   </div>
                   <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-[#C5B358]' : 'text-slate-500'}`}>
-                    <span>{hasSpecial ? '✓' : '•'}</span> 1 special character (@, #, $, !, etc.)
+                    <span>{hasSpecial ? '✓' : '•'}</span> 1 symbol/special character (@, #, $, !, etc.)
                   </div>
                 </div>
               )}

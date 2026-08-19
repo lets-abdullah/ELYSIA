@@ -100,15 +100,16 @@ export async function register(req, res) {
       });
     }
 
-    const hasMinLength = password.length >= 8;
+    const hasMinLength = password.length >= 12;
     const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
 
-    if (!hasMinLength || !hasUpperCase || !hasNumber || !hasSpecialChar) {
+    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 8 characters long and contain at least 1 uppercase letter (A–Z), 1 number (0–9), and 1 special character/symbol.'
+        message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
       });
     }
 
@@ -218,15 +219,16 @@ export async function updateProfile(req, res) {
 
     if (password && password.trim() !== '') {
       const trimmedPass = password.trim();
-      const hasMinLength = trimmedPass.length >= 8;
+      const hasMinLength = trimmedPass.length >= 12;
       const hasUpperCase = /[A-Z]/.test(trimmedPass);
+      const hasLowerCase = /[a-z]/.test(trimmedPass);
       const hasNumber = /[0-9]/.test(trimmedPass);
       const hasSpecialChar = /[^A-Za-z0-9]/.test(trimmedPass);
 
-      if (!hasMinLength || !hasUpperCase || !hasNumber || !hasSpecialChar) {
+      if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 8 characters long and contain at least 1 uppercase letter (A–Z), 1 number (0–9), and 1 special character/symbol.'
+          message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
         });
       }
       const salt = bcrypt.genSaltSync(10);
