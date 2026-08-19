@@ -97,7 +97,10 @@ export default function App() {
             {renderPage()}
           </main>
 
-          <Footer onNavigate={handleNavigate} />
+          {/* Hide Footer completely on My Profile / Dashboard page */}
+          {activePage !== 'profile' && activePage !== 'dashboard' && (
+            <Footer onNavigate={handleNavigate} />
+          )}
           <ScrollToTop />
           <ErpPayloadViewer />
           <AuthModal />

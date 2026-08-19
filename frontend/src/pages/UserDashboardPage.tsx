@@ -3,7 +3,7 @@ import {
   User, Mail, Phone, Calendar, Clock, CheckCircle2, AlertCircle, LogOut,
   ArrowRight, ShieldCheck, BedDouble, Building2, CreditCard, Bell, HelpCircle,
   Lock, Edit3, Printer, FileText, Send, Sparkles, Check, Key, Crown,
-  Briefcase, MessageSquare, Headphones, ChevronDown, ChevronRight, X
+  Briefcase, MessageSquare, Headphones, ChevronDown, ChevronRight, X, Eye, EyeOff
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -26,7 +26,9 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
 
   // Change Password Form State
   const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [changingPass, setChangingPass] = useState(false);
   const [passSuccessMsg, setPassSuccessMsg] = useState<string | null>(null);
   const [passErrMsg, setPassErrMsg] = useState<string | null>(null);
@@ -628,14 +630,22 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
                     <label className="block text-slate-700 font-bold mb-1">New Password (Min 8 chars)</label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showNewPassword ? 'text' : 'password'}
                         required
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#B68B40] focus:outline-none"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#B68B40] focus:outline-none"
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        aria-label={showNewPassword ? "Hide password" : "Show password"}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition p-1 cursor-pointer"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 
@@ -643,14 +653,22 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
                     <label className="block text-slate-700 font-bold mb-1">Confirm New Password</label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showConfirmPassword ? 'text' : 'password'}
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#B68B40] focus:outline-none"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#B68B40] focus:outline-none"
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition p-1 cursor-pointer"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 

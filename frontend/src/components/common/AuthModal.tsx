@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Phone, LogIn, UserPlus, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, LogIn, UserPlus, AlertCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const AuthModal: React.FC = () => {
@@ -9,12 +9,15 @@ export const AuthModal: React.FC = () => {
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -212,14 +215,22 @@ export const AuthModal: React.FC = () => {
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showLoginPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-4 py-2.5 bg-[#262626] border border-[#444444] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#C5B358]"
+                  className="w-full pl-9 pr-9 py-2.5 bg-[#262626] border border-[#444444] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#C5B358]"
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition p-0.5 cursor-pointer"
+                >
+                  {showLoginPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
 
@@ -305,14 +316,22 @@ export const AuthModal: React.FC = () => {
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showRegPassword ? 'text' : 'password'}
                   required
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-4 py-2 bg-[#262626] border border-[#444444] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#C5B358]"
+                  className="w-full pl-9 pr-9 py-2 bg-[#262626] border border-[#444444] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#C5B358]"
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  aria-label={showRegPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition p-0.5 cursor-pointer"
+                >
+                  {showRegPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
               </div>
 
               {/* Real-time Password Requirements Checklist */}
@@ -341,14 +360,22 @@ export const AuthModal: React.FC = () => {
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showRegConfirmPassword ? 'text' : 'password'}
                   required
                   value={regConfirmPassword}
                   onChange={(e) => setRegConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-4 py-2 bg-[#262626] border border-[#444444] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#C5B358]"
+                  className="w-full pl-9 pr-9 py-2 bg-[#262626] border border-[#444444] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#C5B358]"
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <button
+                  type="button"
+                  onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                  aria-label={showRegConfirmPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition p-0.5 cursor-pointer"
+                >
+                  {showRegConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
               </div>
               {regConfirmPassword && regPassword !== regConfirmPassword && (
                 <p className="text-[10px] text-rose-400 mt-1">Passwords do not match.</p>
