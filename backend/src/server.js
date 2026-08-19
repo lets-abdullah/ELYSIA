@@ -18,6 +18,7 @@ import customerRoutes  from './routes/customerRoutes.js';
 import userRoutes      from './routes/userRoutes.js';
 import reportRoutes    from './routes/reportRoutes.js';
 import invoiceRoutes   from './routes/invoiceRoutes.js';
+import { csrfProtection } from './middleware/csrf.js';
 
 dotenv.config();
 
@@ -83,9 +84,10 @@ app.use(
   })
 );
 
-// ── 4. Request Parsers ────────────────────────────────────────────────────────
+// ── 4. Request Parsers & CSRF Protection ─────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
+app.use(csrfProtection(allowedOrigins));
 
 // ── 5. Rate Limiting for Authentication ───────────────────────────────────────
 const authLimiter = rateLimit({

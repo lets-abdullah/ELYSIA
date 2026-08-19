@@ -293,6 +293,13 @@ export async function updateReservationStatus(req, res) {
       });
     }
 
+    if (roomId !== undefined && roomId !== null && typeof roomId !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid roomId parameter. Must be a string.'
+      });
+    }
+
     // Fetch current reservation
     const resResult = await query('SELECT * FROM reservations WHERE id = $1', [id]);
     if (resResult.rows.length === 0) {
@@ -301,7 +308,7 @@ export async function updateReservationStatus(req, res) {
 
     const reservation = resResult.rows[0];
     const lowerStatus = status.trim().toLowerCase().replace(/-/g, '_');
-    const targetRoomId = roomId ? roomId.trim() : reservation.room_id;
+    const targetRoomId = (typeof roomId === 'string' && roomId.trim() !== '') ? roomId.trim() : reservation.room_id;
 
     // ── Role Security: Only Admin and Manager can cancel reservations ────────
     const userRoleLower = req.user ? (req.user.role || '').toLowerCase() : '';

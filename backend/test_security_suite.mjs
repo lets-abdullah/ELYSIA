@@ -1,6 +1,7 @@
-import http from 'http';
+import https from 'https';
+import fs from 'fs';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file (git ignored)
@@ -9,25 +10,42 @@ dotenv.config();
 // Ensure test execution environment mode
 process.env.NODE_ENV = 'test';
 
-const { default: app } = await import('./src/server.js');
+// Dynamically generate cryptographically strong secret for testing if not set
+process.env.JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const JWT_SECRET = process.env.JWT_SECRET;
+
+const { default: app } = await import('./src/server.js');
 
 let server;
 const PORT = 5099;
 
+// Load test TLS certificates for HTTPS test transport
+const sslOptions = {
+  key: fs.readFileSync(new URL('./test_key.pem', import.meta.url)),
+  cert: fs.readFileSync(new URL('./test_cert.pem', import.meta.url))
+};
+
 function request(options, data = null) {
   return new Promise((resolve, reject) => {
-    const req = http.request({ ...options, port: PORT, host: '127.0.0.1' }, (res) => {
-      let body = '';
-      res.on('data', (chunk) => (body += chunk));
-      res.on('end', () => {
-        let json = null;
-        try {
-          json = JSON.parse(body);
-        } catch (_) {}
-        resolve({ statusCode: res.statusCode, headers: res.headers, body: json || body });
-      });
-    });
+    const req = https.request(
+      {
+        ...options,
+        port: PORT,
+        host: '127.0.0.1',
+        rejectUnauthorized: false
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (chunk) => (body += chunk));
+        res.on('end', () => {
+          let json = null;
+          try {
+            json = JSON.parse(body);
+          } catch (_) {}
+          resolve({ statusCode: res.statusCode, headers: res.headers, body: json || body });
+        });
+      }
+    );
     req.on('error', reject);
     if (data) {
       req.write(typeof data === 'string' ? data : JSON.stringify(data));
@@ -155,9 +173,10 @@ async function runSecurityTests() {
   );
   assertTest('Non-string payload in register rejected with 400', invalidRegisterTypes.statusCode === 400);
 
+  const invalidShortPass = crypto.randomBytes(2).toString('hex');
   const shortPasswordRegister = await request(
     { path: '/api/auth/register', method: 'POST', headers: { 'Content-Type': 'application/json' } },
-    { name: 'Weak Pass User', email: 'weak@example.com', password: '123' }
+    { name: 'Weak Pass User', email: 'weak@example.com', password: invalidShortPass }
   );
   assertTest('Weak password (< 12 chars / missing complexity) in register rejected with 400', shortPasswordRegister.statusCode === 400);
 
@@ -219,9 +238,10 @@ async function runSecurityTests() {
   console.log('\n--- 7. Authentication Rate Limiting (5 reqs / 30m) ---');
   let rateLimited = false;
   for (let i = 0; i < 7; i++) {
+    const randomTestPass = crypto.randomBytes(16).toString('hex');
     const res = await request(
       { path: '/api/auth/login', method: 'POST', headers: { 'Content-Type': 'application/json' } },
-      { email: `brute_test_${i}@example.com`, password: 'WrongPassword123!' }
+      { email: `brute_test_${i}@example.com`, password: randomTestPass }
     );
     if (res.statusCode === 429) {
       rateLimited = true;
@@ -230,6 +250,22 @@ async function runSecurityTests() {
   }
   assertTest('Rate limiter triggered with HTTP 429 after 5 requests', rateLimited);
 
+  // ── TEST GROUP 8: CSRF Defense ─────────────────────────────────────────────
+  console.log('\n--- 8. Cross-Site Request Forgery (CSRF) Defense ---');
+  const csrfBlockedReq = await request(
+    {
+      path: '/api/auth/profile',
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'https://malicious-attacker-site.com',
+        'Sec-Fetch-Site': 'cross-site'
+      }
+    },
+    { name: 'Hacked Name' }
+  );
+  assertTest('Cross-origin forged request rejected with 403 (CSRF blocked)', csrfBlockedReq.statusCode === 403);
+
   console.log('\n======================================================');
   console.log(`  SUMMARY: ${passed} / ${total} TESTS PASSED (${Math.round((passed / total) * 100)}%)`);
   console.log('======================================================\n');
@@ -237,8 +273,8 @@ async function runSecurityTests() {
   return passed === total;
 }
 
-// Start temporary test server
-server = app.listen(PORT, '127.0.0.1', async () => {
+// Start temporary HTTPS test server
+server = https.createServer(sslOptions, app).listen(PORT, '127.0.0.1', async () => {
   try {
     const success = await runSecurityTests();
     server.close(() => {
