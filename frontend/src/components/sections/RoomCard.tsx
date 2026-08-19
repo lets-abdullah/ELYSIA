@@ -50,19 +50,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onSelectDetails, onBoo
     <article className="group bg-white border border-[#E5E5E5] hover:border-[#C5B358] transition-all duration-300 shadow-sm hover:shadow-md flex flex-col h-full overflow-hidden relative">
       {/* Room Image Container */}
       <div
-        className="relative aspect-[16/10] overflow-hidden bg-[#F5F5F0] cursor-pointer"
+        className="relative aspect-16/10 overflow-hidden bg-[#F5F5F0] cursor-pointer"
         onClick={handleCardClick}
       >
         <img
           src={image}
           alt={name}
           className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 ${
-            isReserved ? 'grayscale-[40%] opacity-90' : ''
+            isReserved ? 'grayscale-40 opacity-90' : ''
           }`}
           referrerPolicy="no-referrer"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
 
         {/* Category badge */}
         <div className="absolute top-3 left-3 bg-[#1A1A1A]/90 text-[#C5B358] border border-[#C5B358]/40 text-[10px] uppercase tracking-[0.2em] px-3 py-1 font-semibold flex items-center gap-1.5 backdrop-blur-xs">

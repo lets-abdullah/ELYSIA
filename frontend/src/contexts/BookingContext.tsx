@@ -163,7 +163,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     >
       {/* Global Reserved Room Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-[#1A1A1A] text-white border-2 border-rose-500/80 px-6 py-4 shadow-2xl rounded-none flex items-center gap-3.5 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-9999 bg-[#1A1A1A] text-white border-2 border-rose-500/80 px-6 py-4 shadow-2xl rounded-none flex items-center gap-3.5 animate-in fade-in slide-in-from-top-4 duration-300">
           <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
           <span className="text-xs sm:text-sm font-semibold tracking-wide font-serif text-rose-200">
             {toastMessage}

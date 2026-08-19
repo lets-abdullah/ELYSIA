@@ -134,7 +134,7 @@ export const RoomManagementModule: React.FC<{
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[200px] flex-1 md:flex-initial">
+          <div className="relative min-w-50 flex-1 md:flex-initial">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"

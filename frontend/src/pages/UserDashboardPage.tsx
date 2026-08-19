@@ -195,7 +195,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
 
             {/* Logo Crest Header */}
             <div className="text-center pt-2 pb-4 border-b border-slate-800">
-              <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-b from-[#D4AF37] to-[#997A15] p-0.5 flex items-center justify-center shadow-lg mb-2">
+              <div className="w-14 h-14 mx-auto rounded-full bg-linear-to-b from-[#D4AF37] to-[#997A15] p-0.5 flex items-center justify-center shadow-lg mb-2">
                 <div className="w-full h-full rounded-full bg-[#0D1527] flex items-center justify-center">
                   <span className="font-serif text-2xl font-bold text-[#D4AF37]">G</span>
                 </div>
@@ -309,7 +309,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
             <div className="space-y-6">
 
               {/* 1. Hero Promo Banner */}
-              <div className="bg-gradient-to-r from-stone-100 via-stone-50 to-[#FDFBF7] border border-stone-200/90 rounded-3xl overflow-hidden shadow-xs grid grid-cols-1 md:grid-cols-12 items-center">
+              <div className="bg-linear-to-r from-stone-100 via-stone-50 to-[#FDFBF7] border border-stone-200/90 rounded-3xl overflow-hidden shadow-xs grid grid-cols-1 md:grid-cols-12 items-center">
                 <div className="md:col-span-6 p-6 sm:p-10 space-y-4">
                   <h2 className="font-serif text-3xl sm:text-4xl font-light text-slate-900 leading-tight">
                     Experience Comfort, Luxury & Elegance
@@ -331,7 +331,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
                     alt="Luxury Bedroom"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-stone-100 via-transparent to-transparent hidden md:block" />
+                  <div className="absolute inset-0 bg-linear-to-r from-stone-100 via-transparent to-transparent hidden md:block" />
                 </div>
               </div>
 

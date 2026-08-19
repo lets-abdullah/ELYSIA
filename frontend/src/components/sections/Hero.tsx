@@ -8,7 +8,7 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
   return (
-    <section className="relative w-full h-[88vh] min-h-[580px] max-h-[1080px] flex items-center justify-center overflow-hidden bg-[#0F0F0F] text-white">
+    <section className="relative w-full h-[88vh] min-h-145 max-h-270 flex items-center justify-center overflow-hidden bg-[#0F0F0F] text-white">
       {/* ── Background Video with Fallback Poster ── */}
       <video
         autoPlay
@@ -24,7 +24,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
       </video>
 
       {/* ── Multi-Layer Luxury Dark & Gold Vignette Overlay ── */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black/80 z-10" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/70 via-black/45 to-black/80 z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)] z-10" />
 
       {/* ── Hero Content (Centered & Legible) ── */}

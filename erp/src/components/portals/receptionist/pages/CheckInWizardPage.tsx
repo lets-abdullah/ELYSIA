@@ -37,7 +37,7 @@ export const CheckInWizardPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
       {/* Top Banner Header */}
-      <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-indigo-950 p-6 sm:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
+      <div className="bg-linear-to-r from-emerald-900 via-slate-900 to-indigo-950 p-6 sm:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -119,7 +119,7 @@ export const CheckInWizardPage: React.FC = () => {
 
           {/* Selected Booking Details Card */}
           {selectedBooking ? (
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg space-y-4">
+            <div className="p-6 rounded-2xl bg-linear-to-br from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-lg flex items-center justify-center">

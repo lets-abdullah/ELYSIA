@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div>
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800/80">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-bold shadow-md shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-bold shadow-md shrink-0">
               <Building2 className="w-5 h-5" />
             </div>
             {!isCollapsed && (
