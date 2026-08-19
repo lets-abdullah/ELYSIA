@@ -15,6 +15,7 @@ import {
   Star, Sparkles, Terminal, RefreshCw, Filter, Calendar, ShieldCheck, ArrowLeft
 } from 'lucide-react';
 import { FadeInUp } from '../components/common/FadeInUp';
+import { API_BASE_URL } from '../config/api';
 
 interface BookingPageProps {
   roomId?: string;
@@ -183,7 +184,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({ roomId, onNavigate }) 
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      await fetch('http://localhost:5000/api/reservations', {
+      await fetch(`${API_BASE_URL}/reservations`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

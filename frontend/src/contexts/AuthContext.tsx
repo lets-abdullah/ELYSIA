@@ -55,7 +55,7 @@ interface AuthContextType {
   closeProfileModal: () => void;
 }
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

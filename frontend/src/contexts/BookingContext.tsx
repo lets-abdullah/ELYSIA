@@ -3,6 +3,8 @@ import { Room } from '../types';
 import { ROOMS_DATA } from '../data/roomsData';
 import { AlertCircle } from 'lucide-react';
 
+import { API_BASE_URL } from '../config/api';
+
 interface BookingContextType {
   rooms: Room[];
   checkIn: string;
@@ -67,7 +69,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchRoomsFromBackend = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/rooms');
+      const res = await fetch(`${API_BASE_URL}/rooms`);
       const data = await res.json();
       if (data.success && data.rooms && data.rooms.length > 0) {
         setRooms(data.rooms);

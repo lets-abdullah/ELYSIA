@@ -6,6 +6,7 @@ import {
   Briefcase, MessageSquare, Headphones, ChevronDown, ChevronRight, X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 interface UserDashboardPageProps {
   onNavigate: (page: string, roomId?: string) => void;
@@ -86,7 +87,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
 
     try {
       const token = localStorage.getItem('elysia_cust_token');
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +133,7 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
     setChangingPass(true);
     try {
       const token = localStorage.getItem('elysia_cust_token');
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

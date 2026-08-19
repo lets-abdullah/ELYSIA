@@ -13,20 +13,34 @@ if (missingDbVars.length > 0) {
   console.error(errMsg);
 }
 
-const isRemoteDb = process.env.DB_HOST && !['localhost', '127.0.0.1'].includes(process.env.DB_HOST.toLowerCase());
+const isRemoteDb = process.env.DATABASE_URL
+  ? true
+  : process.env.DB_HOST && !['localhost', '127.0.0.1'].includes(process.env.DB_HOST.toLowerCase());
+
 const useSsl = process.env.DB_SSL === 'true' || process.env.DB_SSL === 'require' || isRemoteDb;
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT, 10) || 5432,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: useSsl ? { rejectUnauthorized: false } : false,
-  max: process.env.VERCEL ? 5 : 20, // max pool connections
-  idleTimeoutMillis: 30000, // close idle clients after 30s
-  connectionTimeoutMillis: 10000
-});
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: useSsl ? { rejectUnauthorized: false } : false,
+      max: process.env.VERCEL ? 5 : 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    }
+  : {
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT, 10) || 5432,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      ssl: useSsl ? { rejectUnauthorized: false } : false,
+      max: process.env.VERCEL ? 5 : 20, // max pool connections
+      idleTimeoutMillis: 30000, // close idle clients after 30s
+      connectionTimeoutMillis: 10000
+    };
+
+const pool = new Pool(poolConfig);
+
 
 pool.on('error', (err) => {
   console.error('PostgreSQL pool error:', err.message);
