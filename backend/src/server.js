@@ -189,7 +189,12 @@ async function runSchema() {
   const sql = fs.readFileSync(schemaPath, 'utf8');
   try {
     await query(sql);
-    console.log('✅ PostgreSQL schema applied (CREATE TABLE IF NOT EXISTS).');
+    // Ensure new columns exist in users table
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 1;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ DEFAULT NOW();
+    `);
+    console.log('✅ PostgreSQL schema applied (CREATE TABLE IF NOT EXISTS & column checks).');
   } catch (err) {
     console.error('❌ Schema migration failed:', err.message);
     throw err;

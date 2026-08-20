@@ -19,15 +19,18 @@ import {
   EyeOff,
   Shield,
   Key,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck
 } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { Staff, Department, StaffStatus, Role } from '../../types';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { PasswordRequirements } from '../common/PasswordRequirements';
+import { validateErpPassword, generateCompliantPassword } from '../../utils/passwordPolicy';
 
 export const StaffManagementModule: React.FC = () => {
-  const { staff, addStaff, updateStaff, deleteStaff, users } = useHotel();
+  const { staff, addStaff, updateStaff, deleteStaff, users, showToast } = useHotel();
 
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState<string>('All');
@@ -37,6 +40,8 @@ export const StaffManagementModule: React.FC = () => {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -45,35 +50,20 @@ export const StaffManagementModule: React.FC = () => {
     role: 'Receptionist' as Role
   });
 
-  const generateSecurePassword = () => {
-    const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const lowers = 'abcdefghjkmnpqrstuvwxyz';
-    const numbers = '23456789';
-    const symbols = '!@#$%^&*';
-    const all = uppers + lowers + numbers + symbols;
-
-    let pass =
-      uppers.charAt(Math.floor(Math.random() * uppers.length)) +
-      lowers.charAt(Math.floor(Math.random() * lowers.length)) +
-      numbers.charAt(Math.floor(Math.random() * numbers.length)) +
-      symbols.charAt(Math.floor(Math.random() * symbols.length));
-
-    for (let i = 4; i < 14; i++) {
-      pass += all.charAt(Math.floor(Math.random() * all.length));
-    }
-    return pass.split('').sort(() => 0.5 - Math.random()).join('');
-  };
-
   const handleGeneratePassword = () => {
-    setFormData((prev) => ({ ...prev, password: generateSecurePassword() }));
+    const newPass = generateCompliantPassword();
+    setFormData((prev) => ({ ...prev, password: newPass }));
+    setShowPassword(true);
+    setFormError(null);
   };
 
   const handleOpenAddModal = () => {
     setEditingStaff(null);
     setShowPassword(true);
+    setFormError(null);
     setFormData({
       email: '',
-      password: generateSecurePassword(),
+      password: generateCompliantPassword(),
       role: 'Receptionist'
     });
     setIsModalOpen(true);
@@ -82,6 +72,7 @@ export const StaffManagementModule: React.FC = () => {
   const handleOpenEditModal = (stf: Staff) => {
     setEditingStaff(stf);
     setShowPassword(false);
+    setFormError(null);
     
     // Find matching user from system users to get stored password & role
     const matchedUser = users.find(u => u.email.toLowerCase() === stf.email.toLowerCase());
@@ -94,11 +85,34 @@ export const StaffManagementModule: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) return;
+    setFormError(null);
 
-    const emailPrefix = formData.email.split('@')[0] || 'Staff';
+    const cleanEmail = formData.email.trim().toLowerCase();
+    const cleanPassword = formData.password.trim();
+
+    if (!cleanEmail) {
+      setFormError('Email address is required.');
+      showToast('Validation Error', 'Email address is required.', 'error');
+      return;
+    }
+
+    if (!cleanPassword) {
+      setFormError('Account password is required.');
+      showToast('Validation Error', 'Account password is required.', 'error');
+      return;
+    }
+
+    // Validate password policy
+    const validation = validateErpPassword(cleanPassword);
+    if (!validation.isValid) {
+      setFormError(validation.message);
+      showToast('Password Policy Error', validation.message, 'error');
+      return;
+    }
+
+    const emailPrefix = cleanEmail.split('@')[0] || 'Staff';
     const derivedName = editingStaff?.name || emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
 
     const mappedDept: Department = 
@@ -110,36 +124,55 @@ export const StaffManagementModule: React.FC = () => {
       formData.role === 'Manager' ? 'Manager' :
       formData.role === 'Receptionist' ? 'Receptionist' : 'Staff Member';
 
-    if (editingStaff) {
-      updateStaff(editingStaff.id, {
-        name: derivedName,
-        phone: editingStaff.phone || '',
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
-        department: editingStaff.department || mappedDept,
-        position: editingStaff.position || mappedPos,
-        joiningDate: editingStaff.joiningDate || new Date().toISOString().split('T')[0],
-        status: editingStaff.status || 'Active',
-        salary: editingStaff.salary || 0,
-        shift: editingStaff.shift || 'Morning'
-      });
-    } else {
-      addStaff({
-        name: derivedName,
-        phone: '',
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
-        department: mappedDept,
-        position: mappedPos,
-        joiningDate: new Date().toISOString().split('T')[0],
-        status: 'Active',
-        salary: 0,
-        shift: 'Morning'
-      });
+    setIsSaving(true);
+
+    try {
+      if (editingStaff) {
+        const res = await updateStaff(editingStaff.id, {
+          name: derivedName,
+          phone: editingStaff.phone || '',
+          email: cleanEmail,
+          password: cleanPassword,
+          role: formData.role,
+          department: editingStaff.department || mappedDept,
+          position: editingStaff.position || mappedPos,
+          joiningDate: editingStaff.joiningDate || new Date().toISOString().split('T')[0],
+          status: editingStaff.status || 'Active',
+          salary: editingStaff.salary || 0,
+          shift: editingStaff.shift || 'Morning'
+        });
+
+        if (res.success) {
+          setIsModalOpen(false);
+        } else {
+          setFormError(res.message || 'Failed to update staff credentials.');
+        }
+      } else {
+        const res = await addStaff({
+          name: derivedName,
+          phone: '',
+          email: cleanEmail,
+          password: cleanPassword,
+          role: formData.role,
+          department: mappedDept,
+          position: mappedPos,
+          joiningDate: new Date().toISOString().split('T')[0],
+          status: 'Active',
+          salary: 0,
+          shift: 'Morning'
+        });
+
+        if (res.success) {
+          setIsModalOpen(false);
+        } else {
+          setFormError(res.message || 'Failed to create staff account.');
+        }
+      }
+    } catch (err: any) {
+      setFormError(err.message || 'Database update failed.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
 
   // Filtered staff
@@ -279,6 +312,12 @@ export const StaffManagementModule: React.FC = () => {
         subtitle="Set login email, account password, and system ERP role access level"
       >
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {formError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1 font-medium">{formError}</div>
+            </div>
+          )}
           
           <div className="bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
@@ -298,7 +337,10 @@ export const StaffManagementModule: React.FC = () => {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    setFormError(null);
+                  }}
                   placeholder="e.g. staff@grandluxe.com"
                   className="w-full pl-9 pr-3 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-medium"
                 />
@@ -313,7 +355,7 @@ export const StaffManagementModule: React.FC = () => {
                   onClick={handleGeneratePassword}
                   className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
                 >
-                  <RefreshCw className="w-3 h-3" /> Auto-Generate
+                  <RefreshCw className="w-3 h-3" /> Auto-Generate Compliant
                 </button>
               </div>
               <div className="relative">
@@ -322,8 +364,11 @@ export const StaffManagementModule: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Set account password"
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value });
+                    setFormError(null);
+                  }}
+                  placeholder="Set account password (min 12 chars)"
                   className="w-full pl-9 pr-10 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-mono font-medium"
                 />
                 <button
@@ -335,6 +380,9 @@ export const StaffManagementModule: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Live Password Policy Checklist */}
+            <PasswordRequirements password={formData.password} />
 
             <div>
               <label className="block text-slate-700 font-semibold mb-1">System ERP Role *</label>
@@ -360,9 +408,11 @@ export const StaffManagementModule: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm shadow-indigo-200 cursor-pointer"
+              disabled={isSaving}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm shadow-indigo-200 cursor-pointer flex items-center gap-2 disabled:opacity-50"
             >
-              {editingStaff ? 'Update Staff Member' : 'Add Staff Member'}
+              <ShieldCheck className="w-4 h-4" />
+              <span>{isSaving ? 'Saving...' : editingStaff ? 'Update Staff Credentials' : 'Add Staff Member'}</span>
             </button>
           </div>
         </form>

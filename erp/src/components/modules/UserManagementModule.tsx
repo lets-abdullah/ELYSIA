@@ -11,15 +11,23 @@ import {
   Mail,
   Phone,
   User as UserIcon,
-  Filter
+  Filter,
+  Lock,
+  Eye,
+  EyeOff,
+  Key,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { User, Role, UserStatus } from '../../types';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { PasswordRequirements } from '../common/PasswordRequirements';
+import { validateErpPassword, generateCompliantPassword } from '../../utils/passwordPolicy';
 
 export const UserManagementModule: React.FC = () => {
-  const { users, addUser, updateUser, deleteUser } = useHotel();
+  const { users, addUser, updateUser, deleteUser, showToast } = useHotel();
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('All');
@@ -29,6 +37,11 @@ export const UserManagementModule: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const UNCHANGED_PASSWORD_SENTINEL = '__unchanged__';
 
   // Form State
   const [formData, setFormData] = useState({
@@ -41,28 +54,37 @@ export const UserManagementModule: React.FC = () => {
     status: 'Active' as UserStatus
   });
 
+  const handleGeneratePassword = () => {
+    const newPass = generateCompliantPassword();
+    setFormData((prev) => ({ ...prev, password: newPass }));
+    setShowPassword(true);
+    setFormError(null);
+  };
+
   const handleOpenAddModal = () => {
     setEditingUser(null);
+    setShowPassword(true);
+    setFormError(null);
     setFormData({
       name: '',
       email: '',
       phone: '',
       username: '',
-      password: '',
+      password: generateCompliantPassword(),
       role: 'Receptionist',
       status: 'Active'
     });
     setIsModalOpen(true);
   };
 
-  const UNCHANGED_PASSWORD_SENTINEL = '__unchanged__';
-
   const handleOpenEditModal = (user: User) => {
     setEditingUser(user);
+    setShowPassword(false);
+    setFormError(null);
     setFormData({
       name: user.name,
       email: user.email,
-      phone: user.phone,
+      phone: user.phone || '',
       username: user.username,
       password: UNCHANGED_PASSWORD_SENTINEL,
       role: user.role,
@@ -71,31 +93,79 @@ export const UserManagementModule: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.username) return;
+    setFormError(null);
 
-    if (editingUser) {
-      updateUser(editingUser.id, {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        username: formData.username,
-        role: formData.role,
-        status: formData.status
-      });
-    } else {
-      addUser({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        username: formData.username,
-        role: formData.role,
-        status: formData.status,
-        avatar: `https://images.unsplash.com/photo-${1534528741775 + Math.floor(Math.random() * 1000)}?w=150`
-      });
+    const cleanName = formData.name.trim();
+    const cleanEmail = formData.email.trim().toLowerCase();
+    const cleanUsername = formData.username ? formData.username.trim() : cleanEmail.split('@')[0];
+    const cleanPhone = formData.phone ? formData.phone.trim() : '';
+
+    if (!cleanName || !cleanEmail) {
+      setFormError('Full Name and Email Address are required.');
+      showToast('Validation Error', 'Full Name and Email Address are required.', 'error');
+      return;
     }
-    setIsModalOpen(false);
+
+    // If creating user or password was modified from UNCHANGED_PASSWORD_SENTINEL
+    const isNewPasswordProvided = !editingUser || (formData.password && formData.password !== UNCHANGED_PASSWORD_SENTINEL);
+
+    if (isNewPasswordProvided) {
+      const validation = validateErpPassword(formData.password);
+      if (!validation.isValid) {
+        setFormError(validation.message);
+        showToast('Password Policy Error', validation.message, 'error');
+        return;
+      }
+    }
+
+    setIsSaving(true);
+
+    try {
+      if (editingUser) {
+        const updatePayload: Partial<User> & { password?: string } = {
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          username: cleanUsername,
+          role: formData.role,
+          status: formData.status
+        };
+
+        if (formData.password && formData.password !== UNCHANGED_PASSWORD_SENTINEL) {
+          updatePayload.password = formData.password.trim();
+        }
+
+        const res = await updateUser(editingUser.id, updatePayload);
+        if (res.success) {
+          setIsModalOpen(false);
+        } else {
+          setFormError(res.message || 'Failed to update user.');
+        }
+      } else {
+        const res = await addUser({
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          username: cleanUsername,
+          role: formData.role,
+          status: formData.status,
+          password: formData.password.trim(),
+          avatar: `https://images.unsplash.com/photo-${1534528741775 + Math.floor(Math.random() * 1000)}?w=150`
+        });
+
+        if (res.success) {
+          setIsModalOpen(false);
+        } else {
+          setFormError(res.message || 'Failed to create user.');
+        }
+      }
+    } catch (err: any) {
+      setFormError(err.message || 'Database operation failed.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Filtered users
@@ -304,6 +374,13 @@ export const UserManagementModule: React.FC = () => {
         subtitle="Enter user account information"
       >
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {formError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1 font-medium">{formError}</div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-slate-700 font-semibold mb-1 whitespace-nowrap">Full Name *</label>
@@ -311,7 +388,10 @@ export const UserManagementModule: React.FC = () => {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  setFormError(null);
+                }}
                 placeholder="Full Name"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/30"
               />
@@ -323,11 +403,78 @@ export const UserManagementModule: React.FC = () => {
                 type="email"
                 required
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  setFormError(null);
+                }}
                 placeholder="user@hotel.com"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/30"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1 whitespace-nowrap">Phone Number</label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+1 (555) 000-0000"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1 whitespace-nowrap">Username</label>
+              <input
+                type="text"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                placeholder="Username (optional)"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/30 font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Password Section */}
+          <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-slate-700 font-semibold">
+                {editingUser ? 'Update Password (leave unchanged or set new)' : 'Account Password *'}
+              </label>
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" /> Auto-Generate
+              </button>
+            </div>
+            <div className="relative">
+              <Key className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password === UNCHANGED_PASSWORD_SENTINEL ? '' : formData.password}
+                onChange={(e) => {
+                  setFormData({ ...formData, password: e.target.value });
+                  setFormError(null);
+                }}
+                placeholder={editingUser ? '•••••••• (Enter new password to change)' : 'Set password (min 12 chars)'}
+                className="w-full pl-9 pr-10 py-2 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {(!editingUser || (formData.password && formData.password !== UNCHANGED_PASSWORD_SENTINEL)) && (
+              <PasswordRequirements password={formData.password} />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -369,9 +516,11 @@ export const UserManagementModule: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-xs whitespace-nowrap cursor-pointer"
+              disabled={isSaving}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-xs whitespace-nowrap cursor-pointer flex items-center gap-2 disabled:opacity-50"
             >
-              {editingUser ? 'Save Changes' : 'Save User'}
+              <ShieldCheck className="w-4 h-4" />
+              <span>{isSaving ? 'Saving...' : editingUser ? 'Save Changes' : 'Save User'}</span>
             </button>
           </div>
         </form>

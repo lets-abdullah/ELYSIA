@@ -1,12 +1,13 @@
 import bcrypt from 'bcryptjs';
 import { query } from '../db/pool.js';
+import { validatePassword } from '../utils/passwordPolicy.js';
 
 const ALLOWED_ROLES = ['admin', 'manager', 'receptionist', 'customer'];
 
 export async function getAllUsers(req, res) {
   try {
     const result = await query(
-      `SELECT id, name, email, role, phone, status, avatar, last_active, created_at
+      `SELECT id, name, email, role, phone, status, avatar, token_version, password_changed_at, last_active, created_at
        FROM users
        WHERE LOWER(role) IN ('admin', 'manager', 'receptionist')
        ORDER BY created_at ASC`
@@ -26,6 +27,8 @@ export async function getAllUsers(req, res) {
         phone: u.phone || '',
         status: u.status === 'active' ? 'Active' : 'Inactive',
         avatar: u.avatar,
+        tokenVersion: u.token_version,
+        passwordChangedAt: u.password_changed_at,
         lastActive: u.last_active,
         createdAt: u.created_at,
         username: u.email.split('@')[0]
@@ -72,17 +75,13 @@ export async function createUser(req, res) {
       return res.status(400).json({ success: false, message: 'Name, email, password, and role are required.' });
     }
 
-    const trimmedPassword = password.trim();
-    const hasMinLength = trimmedPassword.length >= 12;
-    const hasUpperCase = /[A-Z]/.test(trimmedPassword);
-    const hasLowerCase = /[a-z]/.test(trimmedPassword);
-    const hasNumber = /[0-9]/.test(trimmedPassword);
-    const hasSpecialChar = /[^A-Za-z0-9]/.test(trimmedPassword);
-
-    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    // Validate password policy
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
+        message: passwordValidation.message,
+        missingRequirements: passwordValidation.missingRequirements
       });
     }
 
@@ -99,12 +98,12 @@ export async function createUser(req, res) {
     }
 
     const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync(trimmedPassword, salt);
+    const hashedPassword = bcrypt.hashSync(password.trim(), salt);
     const id = `usr-${Date.now()}`;
 
     await query(
-      `INSERT INTO users (id, name, email, password_hash, role, phone, status, avatar)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      `INSERT INTO users (id, name, email, password_hash, role, phone, status, avatar, token_version, password_changed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
       [
         id,
         cleanName,
@@ -113,7 +112,8 @@ export async function createUser(req, res) {
         cleanRole,
         cleanPhone,
         cleanStatus,
-        avatar && avatar.trim() ? avatar.trim() : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        avatar && avatar.trim() ? avatar.trim() : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        1
       ]
     );
 
@@ -122,13 +122,17 @@ export async function createUser(req, res) {
     await query(
       `INSERT INTO activity_logs (id, user_name, user_role, action, module, details)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [`log-${Date.now()}`, adminName, 'Admin', 'Create User', 'Staff', `Created new user ${cleanName} with role '${cleanRole}'.`]
+      [`log-${Date.now()}`, adminName, req.user?.role || 'Admin', 'Create User', 'Staff', `Created new user ${cleanName} (${cleanEmail}) with role '${cleanRole}'.`]
     );
 
-    return res.status(201).json({ success: true, message: 'User created successfully.', user: { id, name: cleanName, email: cleanEmail, role: cleanRole } });
+    return res.status(201).json({
+      success: true,
+      message: 'User created successfully.',
+      user: { id, name: cleanName, email: cleanEmail, role: cleanRole }
+    });
   } catch (error) {
     console.error('createUser error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to create user.' });
+    return res.status(500).json({ success: false, message: 'Failed to create user in database.' });
   }
 }
 
@@ -168,55 +172,114 @@ export async function updateUser(req, res) {
 
     const existing = await query('SELECT * FROM users WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'User not found in system database.' });
     }
 
     const u = existing.rows[0];
-    let hashedPassword = u.password_hash;
-    if (password && password.trim() !== '') {
-      const trimmedPass = password.trim();
-      const hasMinLength = trimmedPass.length >= 12;
-      const hasUpperCase = /[A-Z]/.test(trimmedPass);
-      const hasLowerCase = /[a-z]/.test(trimmedPass);
-      const hasNumber = /[0-9]/.test(trimmedPass);
-      const hasSpecialChar = /[^A-Za-z0-9]/.test(trimmedPass);
+    const targetEmail = email !== undefined ? email.trim().toLowerCase() : u.email;
+    const emailChanged = targetEmail !== u.email.toLowerCase();
 
-      if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    // If email is changing, verify no collision with another user
+    if (emailChanged) {
+      const emailCollision = await query(
+        'SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND id != $2',
+        [targetEmail, id]
+      );
+      if (emailCollision.rows.length > 0) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
+          message: 'Another user account with this email address already exists.'
+        });
+      }
+    }
+
+    let hashedPassword = u.password_hash;
+    let passwordChanged = false;
+
+    if (password && password.trim() !== '' && password.trim() !== '__unchanged__') {
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: passwordValidation.message,
+          missingRequirements: passwordValidation.missingRequirements
         });
       }
       const salt = bcrypt.genSaltSync(10);
-      hashedPassword = bcrypt.hashSync(trimmedPass, salt);
+      hashedPassword = bcrypt.hashSync(password.trim(), salt);
+      passwordChanged = true;
     }
 
+    const shouldInvalidateSessions = passwordChanged || emailChanged;
+    const cleanName = name !== undefined ? name.trim() : u.name;
+    const cleanRole = role !== undefined ? role.trim().toLowerCase() : u.role;
+    const cleanPhone = phone !== undefined && phone !== null ? phone.trim() : u.phone;
+    const cleanAvatar = avatar !== undefined && avatar !== null ? avatar.trim() : u.avatar;
+    const cleanStatus = status !== undefined && status !== null ? status.trim().toLowerCase() : u.status;
+
+    if (shouldInvalidateSessions) {
+      await query(
+        `UPDATE users SET
+          name                = $2,
+          email               = $3,
+          password_hash       = $4,
+          role                = $5,
+          phone               = $6,
+          avatar              = $7,
+          status              = $8,
+          token_version       = COALESCE(token_version, 1) + 1,
+          password_changed_at = NOW()
+         WHERE id = $1`,
+        [id, cleanName, targetEmail, hashedPassword, cleanRole, cleanPhone, cleanAvatar, cleanStatus]
+      );
+    } else {
+      await query(
+        `UPDATE users SET
+          name          = $2,
+          email         = $3,
+          password_hash = $4,
+          role          = $5,
+          phone         = $6,
+          avatar        = $7,
+          status        = $8
+         WHERE id = $1`,
+        [id, cleanName, targetEmail, hashedPassword, cleanRole, cleanPhone, cleanAvatar, cleanStatus]
+      );
+    }
+
+    // Log admin activity
+    const adminName = req.user ? req.user.name : 'Admin';
+    const detailMsg = passwordChanged && emailChanged
+      ? `Updated email to '${targetEmail}' and reset password for user ${cleanName}. Old sessions invalidated.`
+      : passwordChanged
+      ? `Updated password for user ${cleanName}. Old sessions invalidated.`
+      : emailChanged
+      ? `Updated email to '${targetEmail}' for user ${cleanName}. Old sessions invalidated.`
+      : `Updated profile details for user ${cleanName}.`;
+
     await query(
-      `UPDATE users SET
-        name          = $2,
-        email         = $3,
-        password_hash = $4,
-        role          = $5,
-        phone         = $6,
-        avatar        = $7,
-        status        = $8
-       WHERE id = $1`,
-      [
-        id,
-        name !== undefined ? name.trim() : u.name,
-        email !== undefined ? email.trim().toLowerCase() : u.email,
-        hashedPassword,
-        role !== undefined ? role.trim().toLowerCase() : u.role,
-        phone !== undefined && phone !== null ? phone.trim() : u.phone,
-        avatar !== undefined && avatar !== null ? avatar.trim() : u.avatar,
-        status !== undefined && status !== null ? status.trim().toLowerCase() : u.status
-      ]
+      `INSERT INTO activity_logs (id, user_name, user_role, action, module, details)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [`log-${Date.now()}`, adminName, req.user?.role || 'Admin', 'Update User Credentials', 'Staff', detailMsg]
     );
 
-    return res.json({ success: true, message: 'User updated successfully.' });
+    return res.json({
+      success: true,
+      message: shouldInvalidateSessions
+        ? 'User login credentials updated successfully. Existing sessions have been invalidated.'
+        : 'User updated successfully.',
+      user: {
+        id,
+        name: cleanName,
+        email: targetEmail,
+        role: cleanRole,
+        phone: cleanPhone,
+        status: cleanStatus
+      }
+    });
   } catch (error) {
     console.error('updateUser error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to update user.' });
+    return res.status(500).json({ success: false, message: 'Failed to update user in database.' });
   }
 }
 

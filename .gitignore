@@ -49,4 +49,7 @@ Consolidated_Security_Report*.pdf
 *.pdf
 claude.md
 pdf_images/
+~$*
+*.docx
+
 

@@ -5,16 +5,18 @@
 
 -- USERS (Staff accounts)
 CREATE TABLE IF NOT EXISTS users (
-  id            VARCHAR(100) PRIMARY KEY,
-  name          VARCHAR(255) NOT NULL,
-  email         VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  role          VARCHAR(50)  NOT NULL DEFAULT 'receptionist',
-  phone         VARCHAR(50),
-  status        VARCHAR(50)  NOT NULL DEFAULT 'active',
-  avatar        TEXT,
-  last_active   TIMESTAMPTZ  DEFAULT NOW(),
-  created_at    TIMESTAMPTZ  DEFAULT NOW()
+  id                  VARCHAR(100) PRIMARY KEY,
+  name                VARCHAR(255) NOT NULL,
+  email               VARCHAR(255) UNIQUE NOT NULL,
+  password_hash       VARCHAR(255) NOT NULL,
+  role                VARCHAR(50)  NOT NULL DEFAULT 'receptionist',
+  phone               VARCHAR(50),
+  status              VARCHAR(50)  NOT NULL DEFAULT 'active',
+  avatar              TEXT,
+  token_version       INTEGER      DEFAULT 1,
+  password_changed_at TIMESTAMPTZ  DEFAULT NOW(),
+  last_active         TIMESTAMPTZ  DEFAULT NOW(),
+  created_at          TIMESTAMPTZ  DEFAULT NOW()
 );
 
 -- ROOMS (Hotel inventory)

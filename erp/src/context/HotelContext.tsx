@@ -50,9 +50,9 @@ interface HotelContextType {
   removeToast: (id: string) => void;
 
   // User CRUD
-  addUser: (user: Omit<User, 'id'>) => void;
-  updateUser: (id: string, user: Partial<User>) => void;
-  deleteUser: (id: string) => void;
+  addUser: (user: Omit<User, 'id'>) => Promise<{ success: boolean; message?: string }>;
+  updateUser: (id: string, user: Partial<User>) => Promise<{ success: boolean; message?: string }>;
+  deleteUser: (id: string) => Promise<{ success: boolean; message?: string }>;
 
   // Room CRUD
   addRoom: (room: Omit<Room, 'id'>) => void;
@@ -75,9 +75,9 @@ interface HotelContextType {
   deleteBooking: (id: string) => void;
 
   // Staff CRUD
-  addStaff: (staffMember: Omit<Staff, 'id'>) => void;
-  updateStaff: (id: string, staffMember: Partial<Staff>) => void;
-  deleteStaff: (id: string) => void;
+  addStaff: (staffMember: Omit<Staff, 'id'>) => Promise<{ success: boolean; message?: string }>;
+  updateStaff: (id: string, staffMember: Partial<Staff>) => Promise<{ success: boolean; message?: string }>;
+  deleteStaff: (id: string) => Promise<{ success: boolean; message?: string }>;
 
   // Housekeeping CRUD
   addHousekeepingTask: (task: Omit<HousekeepingTask, 'id'>) => void;
@@ -314,45 +314,67 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- USER CRUD ---
-  const addUser = async (userData: Omit<User, 'id'>) => {
+  const addUser = async (userData: Omit<User, 'id'>): Promise<{ success: boolean; message?: string }> => {
     try {
       const res = await apiFetch('/users', {
         method: 'POST',
         body: JSON.stringify(userData)
       });
-      if (res.success) {
-        showToast('User Created', `User ${userData.name} created.`, 'success');
+      if (res && res.success) {
+        showToast('User Created', `User account for ${userData.name} created successfully.`, 'success');
         refreshDataFromBackend();
+        return { success: true, message: res.message || 'User created successfully.' };
+      } else {
+        const msg = res?.message || 'Failed to create user.';
+        showToast('User Error', msg, 'error');
+        return { success: false, message: msg };
       }
     } catch (err: any) {
-      showToast('User Error', err.message || 'Failed to create user', 'error');
+      const msg = err.message || 'Failed to create user in database.';
+      showToast('User Error', msg, 'error');
+      return { success: false, message: msg };
     }
   };
 
-  const updateUser = async (id: string, userData: Partial<User>) => {
+  const updateUser = async (id: string, userData: Partial<User>): Promise<{ success: boolean; message?: string }> => {
     try {
       const res = await apiFetch(`/users/${id}`, {
         method: 'PUT',
         body: JSON.stringify(userData)
       });
-      if (res.success) {
-        showToast('User Updated', 'User profile updated.', 'success');
+      if (res && res.success) {
+        const msg = res.message || 'User profile updated successfully.';
+        showToast('User Updated', msg, 'success');
         refreshDataFromBackend();
+        return { success: true, message: msg };
+      } else {
+        const msg = res?.message || 'Failed to update user.';
+        showToast('User Update Failed', msg, 'error');
+        return { success: false, message: msg };
       }
     } catch (err: any) {
-      showToast('User Update Failed', err.message, 'error');
+      const msg = err.message || 'Failed to update user in database.';
+      showToast('User Update Failed', msg, 'error');
+      return { success: false, message: msg };
     }
   };
 
-  const deleteUser = async (id: string) => {
+  const deleteUser = async (id: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const res = await apiFetch(`/users/${id}`, { method: 'DELETE' });
-      if (res.success) {
+      if (res && res.success) {
         showToast('User Removed', 'User account deleted.', 'warning');
         refreshDataFromBackend();
+        return { success: true, message: res.message || 'User deleted.' };
+      } else {
+        const msg = res?.message || 'Failed to delete user.';
+        showToast('User Delete Failed', msg, 'error');
+        return { success: false, message: msg };
       }
     } catch (err: any) {
-      showToast('User Delete Failed', err.message, 'error');
+      const msg = err.message || 'Failed to delete user from database.';
+      showToast('User Delete Failed', msg, 'error');
+      return { success: false, message: msg };
     }
   };
 
@@ -574,8 +596,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- STAFF CRUD ---
-  const addStaff = (staffData: Omit<Staff, 'id'>) => {
-    addUser({
+  const addStaff = async (staffData: Omit<Staff, 'id'>): Promise<{ success: boolean; message?: string }> => {
+    return await addUser({
       name: staffData.name,
       email: staffData.email,
       phone: staffData.phone,
@@ -586,8 +608,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const updateStaff = (id: string, staffData: Partial<Staff>) => {
-    updateUser(id, {
+  const updateStaff = async (id: string, staffData: Partial<Staff>): Promise<{ success: boolean; message?: string }> => {
+    return await updateUser(id, {
       name: staffData.name,
       email: staffData.email,
       phone: staffData.phone,
@@ -597,8 +619,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const deleteStaff = (id: string) => {
-    deleteUser(id);
+  const deleteStaff = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    return await deleteUser(id);
   };
 
   // --- HOUSEKEEPING CRUD ---

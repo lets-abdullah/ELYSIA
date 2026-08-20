@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../db/pool.js';
 import { JWT_SECRET } from '../middleware/auth.js';
+import { validatePassword } from '../utils/passwordPolicy.js';
 
 function getCookieOptions() {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -61,8 +62,9 @@ export async function login(req, res) {
     // Update last_active timestamp
     await query('UPDATE users SET last_active = NOW() WHERE id = $1', [user.id]);
 
+    const tokenVersion = user.token_version || 1;
     const token = jwt.sign(
-      { id: user.id, name: user.name, email: user.email, role: user.role },
+      { id: user.id, name: user.name, email: user.email, role: user.role, tokenVersion },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -110,16 +112,12 @@ export async function register(req, res) {
       });
     }
 
-    const hasMinLength = password.length >= 12;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
-
-    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
+        message: passwordValidation.message,
+        missingRequirements: passwordValidation.missingRequirements
       });
     }
 
@@ -129,13 +127,13 @@ export async function register(req, res) {
     }
 
     const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync(password, salt);
+    const hashedPassword = bcrypt.hashSync(password.trim(), salt);
     const id = `usr-${Date.now()}`;
 
     // 1. Insert into users table
     await query(
-      `INSERT INTO users (id, name, email, password_hash, role, phone, status, avatar)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      `INSERT INTO users (id, name, email, password_hash, role, phone, status, avatar, token_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         id,
         cleanName,
@@ -144,7 +142,8 @@ export async function register(req, res) {
         'customer',
         cleanPhone,
         'active',
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanName)}`
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanName)}`,
+        1
       ]
     );
 
@@ -159,7 +158,7 @@ export async function register(req, res) {
     }
 
     const token = jwt.sign(
-      { id, name: cleanName, email: cleanEmail, role: 'customer' },
+      { id, name: cleanName, email: cleanEmail, role: 'customer', tokenVersion: 1 },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -238,6 +237,7 @@ export async function updateProfile(req, res) {
     const newName = name !== undefined ? name.trim() : currentUser.name;
     const newPhone = phone !== undefined && phone !== null ? phone.trim() : currentUser.phone;
     let newHash = currentUser.password_hash;
+    let passwordChanged = false;
 
     if (password && password.trim() !== '') {
       if (!currentPassword || currentPassword.trim() === '') {
@@ -255,27 +255,33 @@ export async function updateProfile(req, res) {
         });
       }
 
-      const trimmedPass = password.trim();
-      const hasMinLength = trimmedPass.length >= 12;
-      const hasUpperCase = /[A-Z]/.test(trimmedPass);
-      const hasLowerCase = /[a-z]/.test(trimmedPass);
-      const hasNumber = /[0-9]/.test(trimmedPass);
-      const hasSpecialChar = /[^A-Za-z0-9]/.test(trimmedPass);
-
-      if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 12 characters long and contain at least 1 uppercase letter (A–Z), 1 lowercase letter (a–z), 1 number (0–9), and 1 symbol/special character.'
+          message: passwordValidation.message,
+          missingRequirements: passwordValidation.missingRequirements
         });
       }
+
       const salt = bcrypt.genSaltSync(10);
-      newHash = bcrypt.hashSync(trimmedPass, salt);
+      newHash = bcrypt.hashSync(password.trim(), salt);
+      passwordChanged = true;
     }
 
-    await query(
-      `UPDATE users SET name = $1, phone = $2, password_hash = $3 WHERE id = $4`,
-      [newName, newPhone, newHash, userId]
-    );
+    if (passwordChanged) {
+      await query(
+        `UPDATE users 
+         SET name = $1, phone = $2, password_hash = $3, token_version = COALESCE(token_version, 1) + 1, password_changed_at = NOW() 
+         WHERE id = $4`,
+        [newName, newPhone, newHash, userId]
+      );
+    } else {
+      await query(
+        `UPDATE users SET name = $1, phone = $2, password_hash = $3 WHERE id = $4`,
+        [newName, newPhone, newHash, userId]
+      );
+    }
 
     // Also update customer table phone/name if customer exists
     await query(
