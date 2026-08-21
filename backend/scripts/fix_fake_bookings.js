@@ -74,11 +74,21 @@ async function fixFakeBookings() {
 
     // Sanitize customer name in customers table
     const cleanCustName = sanitizeInput(keepBooking.cust_name) || 'Guest User';
+    const warningMsg = 'Security Warning: You have attempted spam, manipulated room rates, or duplicate bookings. Fake and unauthorized bookings are strictly prohibited and will be automatically cancelled. Repeated violations may result in permanent account suspension.';
+
     await query(
       `UPDATE customers
-       SET name = $1
-       WHERE id = $2`,
-      [cleanCustName, keepBooking.customer_id]
+       SET name = $1, warning_message = $2
+       WHERE id = $3 OR LOWER(email) = LOWER($4)`,
+      [cleanCustName, warningMsg, keepBooking.customer_id, email]
+    );
+
+    // Also set warning on user login profile if an account exists
+    await query(
+      `UPDATE users
+       SET warning_message = $1
+       WHERE LOWER(email) = LOWER($2)`,
+      [warningMsg, email]
     );
   }
 

@@ -302,6 +302,23 @@ export const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ onNavigate
             ))}
           </div>
 
+          {/* Warning Banner if flagged */}
+          {user.warning_message && (
+            <div className="bg-red-50 border-2 border-red-500 rounded-3xl p-5 sm:p-6 shadow-md flex items-start gap-4 animate-fade-in shrink-0">
+              <div className="p-3 bg-red-600 text-white rounded-2xl shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-red-900 text-sm sm:text-base">
+                  Security Warning: Spam or Fake Activity Detected
+                </h3>
+                <p className="text-xs text-red-800 leading-relaxed font-medium">
+                  {user.warning_message}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── TAB 1: OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div className="space-y-6">

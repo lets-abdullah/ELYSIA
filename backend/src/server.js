@@ -19,6 +19,7 @@ import userRoutes      from './routes/userRoutes.js';
 import reportRoutes    from './routes/reportRoutes.js';
 import invoiceRoutes   from './routes/invoiceRoutes.js';
 import { csrfProtection } from './middleware/csrf.js';
+import { startBookingCleanupScheduler } from './jobs/bookingCleanupJob.js';
 
 dotenv.config();
 
@@ -189,10 +190,12 @@ async function runSchema() {
   const sql = fs.readFileSync(schemaPath, 'utf8');
   try {
     await query(sql);
-    // Ensure new columns exist in users table
+    // Ensure new columns exist in users & customers tables
     await query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 1;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ DEFAULT NOW();
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS warning_message TEXT;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS warning_message TEXT;
     `);
     console.log('✅ PostgreSQL schema applied (CREATE TABLE IF NOT EXISTS & column checks).');
   } catch (err) {
@@ -288,6 +291,9 @@ async function bootstrap() {
 
   await runSchema();
   await runSeed();
+
+  // Start background auto-cleanup scheduler for fake/expired bookings older than 1 hour
+  startBookingCleanupScheduler();
 
   if (!process.env.VERCEL) {
     app.listen(PORT, '0.0.0.0', () => {

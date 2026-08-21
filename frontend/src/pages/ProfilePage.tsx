@@ -40,6 +40,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
     <div className="min-h-screen pt-28 pb-20 bg-[#FAF9F6] text-[#1A1A1A]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
+        {/* Warning Banner if flagged */}
+        {user.warning_message && (
+          <div className="bg-red-50 border-2 border-red-500 rounded-3xl p-5 sm:p-6 shadow-md flex items-start gap-4 animate-fade-in">
+            <div className="p-3 bg-red-600 text-white rounded-2xl shrink-0">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-red-900 text-sm sm:text-base">
+                Security Alert: Spam or Fake Activity Detected
+              </h3>
+              <p className="text-xs text-red-800 leading-relaxed font-medium">
+                {user.warning_message}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Guest Profile Banner Card — Light Theme */}
         <div className="bg-white border border-[#E5E5E5] rounded-3xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">

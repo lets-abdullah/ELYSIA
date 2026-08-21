@@ -9,6 +9,7 @@ export interface UserProfile {
   status?: string;
   avatar?: string;
   username?: string;
+  warning_message?: string;
   createdAt?: string;
 }
 
@@ -39,6 +40,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAuthModalOpen: boolean;
   isProfileModalOpen: boolean;
+  isWarningModalOpen: boolean;
   authModalTab: 'login' | 'register';
   userReservations: UserReservation[];
   loadingReservations: boolean;
@@ -47,12 +49,14 @@ interface AuthContextType {
   register: (name: string, email: string, pass: string, phone: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   updateProfile: (name: string, phone: string, pass?: string, currentPass?: string) => Promise<{ success: boolean; message?: string }>;
+  dismissWarning: () => Promise<void>;
   fetchMyReservations: () => Promise<void>;
 
   openAuthModal: (tab?: 'login' | 'register') => void;
   closeAuthModal: () => void;
   openProfileModal: () => void;
   closeProfileModal: () => void;
+  closeWarningModal: () => void;
 }
 
 import { API_BASE_URL } from '../config/api';
@@ -69,9 +73,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
   const [userReservations, setUserReservations] = useState<UserReservation[]>([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
+
+  // Automatically trigger warning modal if user profile contains a warning message
+  useEffect(() => {
+    if (user && user.warning_message && user.warning_message.trim() !== '') {
+      setIsWarningModalOpen(true);
+    }
+  }, [user?.warning_message]);
 
   // Sync user profile state (JWT is kept in HttpOnly Cookie, NEVER in localStorage)
   const saveSession = (newToken: string, newUser: UserProfile) => {
@@ -79,12 +91,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
     localStorage.removeItem('elysia_cust_token'); // Ensure JWT is purged from localStorage
     localStorage.setItem('elysia_cust_user', JSON.stringify(newUser));
+    if (newUser.warning_message) {
+      setIsWarningModalOpen(true);
+    }
   };
 
   const clearSession = () => {
     setToken(null);
     setUser(null);
     setUserReservations([]);
+    setIsWarningModalOpen(false);
     localStorage.removeItem('elysia_cust_token');
     localStorage.removeItem('elysia_cust_user');
   };
@@ -102,6 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.success && data.user) {
           setUser(data.user);
           localStorage.setItem('elysia_cust_user', JSON.stringify(data.user));
+          if (data.user.warning_message) {
+            setIsWarningModalOpen(true);
+          }
         } else {
           clearSession();
         }
@@ -112,9 +131,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const fetchMyReservations = async () => {
-    if (!user) return;
-    setLoadingReservations(true);
     try {
+      setLoadingReservations(true);
       const headers: Record<string, string> = {};
       if (token) {
         headers.Authorization = `Bearer ${token}`;
@@ -124,11 +142,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         credentials: 'include'
       });
       const data = await res.json();
-      if (data.success && data.reservations) {
+      if (data.success && Array.isArray(data.reservations)) {
         setUserReservations(data.reservations);
       }
     } catch (err) {
-      console.error('Failed to fetch user reservations:', err);
+      console.error('Fetch reservations error:', err);
     } finally {
       setLoadingReservations(false);
     }
@@ -148,17 +166,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email: email.trim(), password: pass.trim() })
+        body: JSON.stringify({ email, password: pass })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        return { success: false, message: data.message || 'Invalid email or password.' };
+        return { success: false, message: data.message || 'Login failed.' };
       }
       saveSession(data.token, data.user);
-      setIsAuthModalOpen(false);
-      return { success: true, message: 'Welcome back!' };
+      return { success: true, message: data.message };
     } catch (err: any) {
-      return { success: false, message: 'Network error. Please check backend connection.' };
+      return { success: false, message: 'Server unreachable. Please check backend service.' };
     }
   };
 
@@ -168,22 +185,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          password: pass.trim(),
-          phone: phone.trim()
-        })
+        body: JSON.stringify({ name, email, password: pass, phone })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        return { success: false, message: data.message || 'Registration failed.' };
+        return {
+          success: false,
+          message: data.message || (data.missingRequirements ? data.missingRequirements.join(', ') : 'Registration failed.')
+        };
       }
       saveSession(data.token, data.user);
-      setIsAuthModalOpen(false);
-      return { success: true, message: 'Registration successful!' };
+      return { success: true, message: data.message };
     } catch (err: any) {
-      return { success: false, message: 'Network error. Please try again.' };
+      return { success: false, message: 'Server unreachable. Please check backend service.' };
     }
   };
 
@@ -227,6 +241,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const dismissWarning = async () => {
+    try {
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      await fetch(`${API_BASE_URL}/auth/dismiss-warning`, {
+        method: 'POST',
+        headers,
+        credentials: 'include'
+      });
+      if (user) {
+        const updatedUser = { ...user, warning_message: undefined };
+        setUser(updatedUser);
+        localStorage.setItem('elysia_cust_user', JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      console.error('Dismiss warning error:', err);
+    } finally {
+      setIsWarningModalOpen(false);
+    }
+  };
+
   const openAuthModal = (tab: 'login' | 'register' = 'login') => {
     setAuthModalTab(tab);
     setIsAuthModalOpen(true);
@@ -242,6 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   const closeProfileModal = () => setIsProfileModalOpen(false);
+  const closeWarningModal = () => setIsWarningModalOpen(false);
 
   return (
     <AuthContext.Provider
@@ -251,6 +289,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isAuthModalOpen,
         isProfileModalOpen,
+        isWarningModalOpen,
         authModalTab,
         userReservations,
         loadingReservations,
@@ -258,11 +297,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         updateProfile,
+        dismissWarning,
         fetchMyReservations,
         openAuthModal,
         closeAuthModal,
         openProfileModal,
-        closeProfileModal
+        closeProfileModal,
+        closeWarningModal
       }}
     >
       {children}

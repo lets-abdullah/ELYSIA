@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   token_version       INTEGER      DEFAULT 1,
   password_changed_at TIMESTAMPTZ  DEFAULT NOW(),
   last_active         TIMESTAMPTZ  DEFAULT NOW(),
+  warning_message     TEXT,
   created_at          TIMESTAMPTZ  DEFAULT NOW()
 );
 
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS customers (
   phone          VARCHAR(50),
   address        TEXT,
   cnic_passport  VARCHAR(100),
+  warning_message TEXT,
   created_at     TIMESTAMPTZ  DEFAULT NOW()
 );
 

@@ -1,5 +1,6 @@
 import { query } from '../db/pool.js';
 import { sanitizeInput } from '../utils/sanitize.js';
+import { autoCleanExpiredPendingBookings } from '../jobs/bookingCleanupJob.js';
 
 const ALLOWED_STATUSES = ['pending', 'confirmed', 'checked_in', 'checked-in', 'checked_out', 'checked-out', 'cancelled'];
 
@@ -473,6 +474,9 @@ export async function getMyReservations(req, res) {
 
 export async function cleanupFakeBookings(req, res) {
   try {
+    // 1. Also clean up any expired pending bookings (> 1 hour old)
+    await autoCleanExpiredPendingBookings();
+
     const resList = await query(`
       SELECT r.*, c.email AS cust_email, c.name AS cust_name, rm.price AS room_price, rm.room_number
       FROM reservations r
@@ -527,7 +531,21 @@ export async function cleanupFakeBookings(req, res) {
       await query('DELETE FROM payments WHERE reservation_id = $1 OR booking_code = $2', [keepBooking.id, keepBooking.booking_code]);
 
       const cleanCustName = sanitizeInput(keepBooking.cust_name) || 'Guest User';
-      await query('UPDATE customers SET name = $1 WHERE id = $2', [cleanCustName, keepBooking.customer_id]);
+      const warningMsg = 'Security Warning: You have attempted spam, manipulated room rates, or duplicate bookings. Fake and unauthorized bookings are strictly prohibited and will be automatically cancelled. Repeated violations may result in permanent account suspension.';
+
+      await query(
+        `UPDATE customers
+         SET name = $1, warning_message = $2
+         WHERE id = $3 OR LOWER(email) = LOWER($4)`,
+        [cleanCustName, warningMsg, keepBooking.customer_id, email]
+      );
+
+      await query(
+        `UPDATE users
+         SET warning_message = $1
+         WHERE LOWER(email) = LOWER($2)`,
+        [warningMsg, email]
+      );
       updatedCount++;
     }
 

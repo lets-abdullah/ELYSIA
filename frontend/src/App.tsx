@@ -7,6 +7,7 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ErpPayloadViewer } from './components/common/ErpPayloadViewer';
 import { AuthModal } from './components/common/AuthModal';
 import { ProfileModal } from './components/common/ProfileModal';
+import { SecurityWarningModal } from './components/common/SecurityWarningModal';
 import { HomePage } from './pages/HomePage';
 import { RoomsPage } from './pages/RoomsPage';
 import { AboutPage } from './pages/AboutPage';
@@ -105,6 +106,7 @@ export default function App() {
           <ErpPayloadViewer />
           <AuthModal />
           <ProfileModal />
+          <SecurityWarningModal />
         </div>
       </BookingProvider>
     </AuthProvider>

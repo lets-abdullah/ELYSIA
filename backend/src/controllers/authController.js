@@ -299,6 +299,7 @@ export async function updateProfile(req, res) {
         phone: newPhone,
         role: currentUser.role,
         avatar: currentUser.avatar,
+        warning_message: currentUser.warning_message,
         username: currentUser.email.split('@')[0]
       }
     });
@@ -307,4 +308,26 @@ export async function updateProfile(req, res) {
     return res.status(500).json({ success: false, message: 'Failed to update profile.' });
   }
 }
+
+export async function dismissWarning(req, res) {
+  try {
+    const userId = req.user.id;
+    const userEmail = (req.user.email || '').toLowerCase();
+
+    // Clear warning on user account and customer record
+    await query('UPDATE users SET warning_message = NULL WHERE id = $1', [userId]);
+    if (userEmail) {
+      await query('UPDATE customers SET warning_message = NULL WHERE LOWER(email) = LOWER($1)', [userEmail]);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Warning acknowledged and dismissed successfully.'
+    });
+  } catch (error) {
+    console.error('Dismiss warning error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to dismiss warning.' });
+  }
+}
+
 
