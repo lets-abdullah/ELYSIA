@@ -29,10 +29,11 @@ export const BillingModule: React.FC = () => {
     const tax = Math.round(baseRoomPrice * (currentTaxRate / 100));
     const totalAmount = baseRoomPrice + tax;
 
-    const isPaid = bk.paymentStatus === 'Paid' || (bk.paidAmount && bk.paidAmount >= total);
+    const isPaid = (bk.paymentStatus === 'Paid' || (bk.paidAmount !== undefined && bk.paidAmount >= total && total > 0)) && bk.status !== 'Pending';
 
     return {
       id: bk.id,
+      guestId: bk.guestId,
       bookingCode: bk.bookingCode || `BK-${bk.id.slice(-6).toUpperCase()}`,
       guestName: bk.guestName,
       guestPhone: bk.guestPhone,
@@ -186,7 +187,7 @@ export const BillingModule: React.FC = () => {
                     <td className="px-3 py-3 font-black text-slate-900 text-sm text-right">${rec.totalAmount}</td>
                     <td className="px-3 py-3 text-right">
                       <button
-                        onClick={() => updateGuestPaymentStatus(rec.id, rec.paymentStatus === 'Paid' ? 'Pending' : 'Paid')}
+                        onClick={() => updateGuestPaymentStatus(rec.guestId || rec.id, rec.paymentStatus === 'Paid' ? 'Pending' : 'Paid')}
                         className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border cursor-pointer transition-all shadow-xs ${rec.paymentStatus === 'Paid'
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                           : 'bg-rose-100 text-rose-800 border-rose-200'

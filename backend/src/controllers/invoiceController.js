@@ -25,8 +25,8 @@ export async function getAllInvoices(req, res) {
 
     const autoInvoices = reservationInvoices.rows.map((r) => {
       const total = parseFloat(r.total_amount) || 0;
-      const isPaid = r.booking_status === 'checked_out' ||
-                     (parseFloat(r.paid_amount) >= total && total > 0);
+      const statusLower = (r.booking_status || '').toLowerCase();
+      const isPaid = (statusLower === 'checked_out' || statusLower === 'checked-out' || (parseFloat(r.paid_amount) >= total && total > 0)) && statusLower !== 'pending' && statusLower !== 'cancelled';
       const paidAmt = isPaid ? total : (parseFloat(r.paid_amount) || 0);
 
       return {
@@ -52,7 +52,7 @@ export async function getAllInvoices(req, res) {
         totalAmount: total,
         paidAmount: paidAmt,
         dueAmount: Math.max(0, total - paidAmt),
-        status: paidAmt >= total && total > 0 ? 'Paid' : 'Pending',
+        status: isPaid ? 'Paid' : 'Pending',
         paymentMethod: 'Credit Card',
         createdAt: r.created_at
       };

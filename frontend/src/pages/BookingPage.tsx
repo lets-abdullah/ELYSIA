@@ -197,7 +197,7 @@ export const BookingPage: React.FC<BookingPageProps> = ({ roomId, onNavigate }) 
           roomId: activeRoom.id,
           roomType: activeRoom.category || activeRoom.type || 'Deluxe',
           totalAmount: total,
-          paidAmount: total,
+          paidAmount: 0,
           bookingSource: 'Website'
         })
       });

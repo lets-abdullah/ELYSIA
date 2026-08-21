@@ -13,7 +13,8 @@ import {
   AlertCircle,
   FileText,
   Printer,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck
 } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { Booking, BookingStatus, Room } from '../../types';
@@ -34,6 +35,7 @@ export const BookingModule: React.FC<{
     assignRoomToBooking,
     updateBookingStatus,
     deleteBooking,
+    cleanupFakeBookings,
     showToast
   } = useHotel();
 
@@ -197,12 +199,28 @@ export const BookingModule: React.FC<{
           </div>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
-        >
-          <CalendarPlus className="w-4 h-4" /> Create Reservation
-        </button>
+        <div className="flex items-center gap-2">
+          {canCancelOrDelete && (
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to clean up duplicate/fake bookings, restore original room prices, and set payments to Unpaid ($0)?')) {
+                  cleanupFakeBookings();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all shadow-xs cursor-pointer border border-slate-200"
+              title="Reset duplicate bookings and restore original room prices"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-600" /> Clean Duplicate & Fake Bookings
+            </button>
+          )}
+
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
+          >
+            <CalendarPlus className="w-4 h-4" /> Create Reservation
+          </button>
+        </div>
       </div>
 
       {/* Pending Approval Banner Alert */}

@@ -1,4 +1,5 @@
 import { query } from '../db/pool.js';
+import { sanitizeInput } from '../utils/sanitize.js';
 
 export async function getAllCustomers(req, res) {
   try {
@@ -121,8 +122,11 @@ export async function createCustomer(req, res) {
       return res.status(400).json({ success: false, message: 'Address must be a valid string.' });
     }
 
-    const cName = (name || fullName || '').trim();
-    const cleanEmail = email.trim().toLowerCase();
+    const cName = sanitizeInput(name || fullName || '');
+    const cleanEmail = email ? sanitizeInput(email).toLowerCase() : '';
+    const cleanPhone = phone ? sanitizeInput(phone) : '';
+    const cleanAddress = address ? sanitizeInput(address) : '';
+
     if (!cName || !cleanEmail) {
       return res.status(400).json({ success: false, message: 'Name and email are required.' });
     }
@@ -135,7 +139,7 @@ export async function createCustomer(req, res) {
     const id = `gst-${Date.now()}`;
     await query(
       'INSERT INTO customers (id, name, email, phone, address) VALUES ($1, $2, $3, $4, $5)',
-      [id, cName, cleanEmail, phone ? phone.trim() : '', address ? address.trim() : '']
+      [id, cName, cleanEmail, cleanPhone, cleanAddress]
     );
 
     return res.status(201).json({ success: true, message: 'Customer created successfully.', customer: { id, name: cName, email: cleanEmail } });
@@ -172,14 +176,15 @@ export async function updateCustomer(req, res) {
     }
 
     const c = existing.rows[0];
-    const newName = (name || fullName !== undefined ? (name || fullName) : c.name);
-    const newEmail = email !== undefined ? email.trim().toLowerCase() : c.email;
-    const newPhone = phone !== undefined && phone !== null ? phone.trim() : c.phone;
-    const newAddress = address !== undefined && address !== null ? address.trim() : c.address;
+    const rawName = (name || fullName !== undefined ? (name || fullName) : c.name);
+    const newName = sanitizeInput(rawName);
+    const newEmail = email !== undefined ? sanitizeInput(email).toLowerCase() : c.email;
+    const newPhone = phone !== undefined && phone !== null ? sanitizeInput(phone) : c.phone;
+    const newAddress = address !== undefined && address !== null ? sanitizeInput(address) : c.address;
 
     await query(
       'UPDATE customers SET name=$2, email=$3, phone=$4, address=$5 WHERE id=$1',
-      [id, typeof newName === 'string' ? newName.trim() : c.name, newEmail, newPhone, newAddress]
+      [id, newName || c.name, newEmail, newPhone, newAddress]
     );
 
     return res.json({ success: true, message: 'Customer updated successfully.' });
@@ -198,27 +203,36 @@ export async function updateCustomerPayment(req, res) {
       return res.status(400).json({ success: false, message: 'Payment status must be a valid string.' });
     }
 
-    const customerResult = await query('SELECT * FROM customers WHERE id = $1', [id]);
-    if (customerResult.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Customer not found.' });
-    }
-
     const isPaid = paymentStatus.trim().toLowerCase() === 'paid';
+    const customerResult = await query('SELECT * FROM customers WHERE id = $1', [id]);
 
-    if (isPaid) {
-      // Set paid_amount = total_amount for all active reservations of this customer
-      await query(
-        `UPDATE reservations
-         SET paid_amount = total_amount
-         WHERE customer_id = $1 AND booking_status NOT IN ('cancelled', 'checked_out')`,
-        [id]
-      );
+    if (customerResult.rows.length > 0) {
+      if (isPaid) {
+        await query(
+          `UPDATE reservations
+           SET paid_amount = total_amount
+           WHERE customer_id = $1 AND booking_status NOT IN ('cancelled', 'checked_out')`,
+          [id]
+        );
+      } else {
+        await query(
+          `UPDATE reservations SET paid_amount = 0
+           WHERE customer_id = $1 AND booking_status NOT IN ('cancelled', 'checked_out')`,
+          [id]
+        );
+      }
     } else {
-      await query(
-        `UPDATE reservations SET paid_amount = 0
-         WHERE customer_id = $1 AND booking_status NOT IN ('cancelled', 'checked_out')`,
-        [id]
-      );
+      // Check if id is a reservation id
+      const resResult = await query('SELECT id, customer_id, total_amount FROM reservations WHERE id = $1 OR booking_code = $1', [id]);
+      if (resResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Customer or reservation not found.' });
+      }
+      const resRow = resResult.rows[0];
+      if (isPaid) {
+        await query('UPDATE reservations SET paid_amount = total_amount WHERE id = $1', [resRow.id]);
+      } else {
+        await query('UPDATE reservations SET paid_amount = 0 WHERE id = $1', [resRow.id]);
+      }
     }
 
     return res.json({

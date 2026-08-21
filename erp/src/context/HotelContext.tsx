@@ -73,6 +73,7 @@ interface HotelContextType {
   updateBookingStatus: (id: string, status: BookingStatus) => void;
   cancelBooking: (id: string) => void;
   deleteBooking: (id: string) => void;
+  cleanupFakeBookings: () => Promise<void>;
 
   // Staff CRUD
   addStaff: (staffMember: Omit<Staff, 'id'>) => Promise<{ success: boolean; message?: string }>;
@@ -592,6 +593,18 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const cleanupFakeBookings = async () => {
+    try {
+      const res = await apiFetch('/reservations/cleanup-fake-bookings', { method: 'POST' });
+      if (res.success) {
+        showToast('Clean Up Complete', res.message || 'Fake bookings removed and original prices restored.', 'success');
+        refreshDataFromBackend();
+      }
+    } catch (err: any) {
+      showToast('Cleanup Failed', err.message || 'Could not clean fake bookings.', 'error');
+    }
+  };
+
   // --- STAFF CRUD ---
   const addStaff = async (staffData: Omit<Staff, 'id'>): Promise<{ success: boolean; message?: string }> => {
     return await addUser({
@@ -792,6 +805,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateBookingStatus,
         cancelBooking,
         deleteBooking,
+        cleanupFakeBookings,
         addStaff,
         updateStaff,
         deleteStaff,

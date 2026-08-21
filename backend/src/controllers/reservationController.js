@@ -1,4 +1,5 @@
 import { query } from '../db/pool.js';
+import { sanitizeInput } from '../utils/sanitize.js';
 
 const ALLOWED_STATUSES = ['pending', 'confirmed', 'checked_in', 'checked-in', 'checked_out', 'checked-out', 'cancelled'];
 
@@ -24,44 +25,24 @@ export async function createReservation(req, res) {
       cnicPassport, address, bookingSource, status
     } = req.body;
 
-    // ── Type Validations ───────────────────────────────────────────────────
-    const rawName = guestName || name;
-    if (rawName !== undefined && typeof rawName !== 'string') {
-      return res.status(400).json({ success: false, message: 'Guest name must be a valid string.' });
-    }
-    if (email !== undefined && typeof email !== 'string') {
-      return res.status(400).json({ success: false, message: 'Email must be a valid string.' });
-    }
-    if (phone !== undefined && typeof phone !== 'string') {
-      return res.status(400).json({ success: false, message: 'Phone must be a valid string.' });
-    }
-    if (roomId !== undefined && roomId !== null && typeof roomId !== 'string') {
-      return res.status(400).json({ success: false, message: 'Room ID must be a valid string.' });
-    }
-    if (roomType !== undefined && roomType !== null && typeof roomType !== 'string') {
-      return res.status(400).json({ success: false, message: 'Room type must be a valid string.' });
-    }
-    if (specialRequests !== undefined && specialRequests !== null && typeof specialRequests !== 'string') {
-      return res.status(400).json({ success: false, message: 'Special requests must be a valid string.' });
-    }
-    if (cnicPassport !== undefined && cnicPassport !== null && typeof cnicPassport !== 'string') {
-      return res.status(400).json({ success: false, message: 'CNIC/Passport must be a valid string.' });
-    }
-    if (address !== undefined && address !== null && typeof address !== 'string') {
-      return res.status(400).json({ success: false, message: 'Address must be a valid string.' });
-    }
-    if (bookingSource !== undefined && bookingSource !== null && typeof bookingSource !== 'string') {
-      return res.status(400).json({ success: false, message: 'Booking source must be a valid string.' });
-    }
+    // ── Type & Input Sanitization (XSS Prevention) ─────────────────────────
+    const rawName = sanitizeInput(guestName || name);
+    const cleanEmail = email ? sanitizeInput(email).toLowerCase() : '';
+    const cleanPhone = phone ? sanitizeInput(phone) : '';
+    const cleanSpecialRequests = specialRequests ? sanitizeInput(specialRequests) : '';
+    const cleanCnicPassport = cnicPassport ? sanitizeInput(cnicPassport) : '';
+    const cleanAddress = address ? sanitizeInput(address) : '';
+    const cleanBookingSource = bookingSource ? sanitizeInput(bookingSource) : 'Website';
 
-    const customerName = rawName ? rawName.trim() : '';
-    const cleanEmail = email ? email.trim().toLowerCase() : '';
-    const cleanPhone = phone ? phone.trim() : '';
     const inDate = checkIn || checkInDate;
     const outDate = checkOut || checkOutDate;
 
-    if (!customerName || !cleanEmail || !cleanPhone || !inDate || !outDate) {
+    if (!rawName || !cleanEmail || !cleanPhone || !inDate || !outDate) {
       return res.status(400).json({ success: false, message: 'Name, email, phone, check-in, and check-out dates are required.' });
+    }
+
+    if (rawName.length < 2 || rawName.length > 100) {
+      return res.status(400).json({ success: false, message: 'Guest name must be between 2 and 100 characters.' });
     }
 
     // ── Date & Numeric Validations (Server-side) ───────────────────────────
@@ -85,70 +66,39 @@ export async function createReservation(req, res) {
       return res.status(400).json({ success: false, message: 'Guest count must be an integer between 1 and 20.' });
     }
 
-    const rawTotal = totalPrice !== undefined ? totalPrice : (totalAmount !== undefined ? totalAmount : 250 * nights);
-    const total = parseFloat(rawTotal);
-    if (isNaN(total) || total < 0 || total > 1000000) {
-      return res.status(400).json({ success: false, message: 'Total price must be a valid number between 0 and 1,000,000.' });
-    }
-
-    const paid = paidAmount !== undefined ? parseFloat(paidAmount) : 0;
-    if (isNaN(paid) || paid < 0 || paid > total) {
-      return res.status(400).json({ success: false, message: 'Paid amount must be a number between 0 and total amount.' });
-    }
-
-    let initialStatus = 'pending';
-    if (status !== undefined && status !== null) {
-      if (typeof status !== 'string' || !ALLOWED_STATUSES.includes(status.trim().toLowerCase())) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid reservation status. Allowed statuses: ${ALLOWED_STATUSES.join(', ')}.`
-        });
-      }
-      initialStatus = status.trim().toLowerCase().replace(/-/g, '_');
-    }
-
-    // ── 1. Find or create customer ──────────────────────────────────────────
-    let customerResult = await query('SELECT * FROM customers WHERE LOWER(email) = LOWER($1)', [cleanEmail]);
-    let customerId;
-
-    if (customerResult.rows.length === 0) {
-      customerId = `gst-${Date.now()}`;
-      await query(
-        `INSERT INTO customers (id, name, email, phone, address, cnic_passport)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [customerId, customerName, cleanEmail, cleanPhone, address ? address.trim() : '', cnicPassport ? cnicPassport.trim() : '']
-      );
-    } else {
-      customerId = customerResult.rows[0].id;
-      // Update phone if changed
-      await query('UPDATE customers SET phone = $2 WHERE id = $1', [customerId, cleanPhone]);
-    }
-
-    // ── 2. Room assignment & availability validation ────────────────────────
-    let assignedRoomId = roomId ? roomId.trim() : null;
-    let assignedRoomType = roomType ? roomType.trim() : 'Standard';
+    // ── 1. Room Assignment & Database Price Resolution ─────────────────────
+    // Fetch authoritative room details and room price directly from Database!
+    let assignedRoomId = roomId ? sanitizeInput(roomId) : null;
+    let assignedRoomType = roomType ? sanitizeInput(roomType) : 'Standard';
+    let roomPricePerNight = 0;
 
     if (assignedRoomId) {
       const rmResult = await query(
         'SELECT * FROM rooms WHERE id = $1 OR room_number = $1',
         [assignedRoomId]
       );
-      if (rmResult.rows.length > 0) {
-        const rm = rmResult.rows[0];
-        if (rm.status && rm.status.toLowerCase() !== 'available') {
-          return res.status(400).json({
-            success: false,
-            message: `Room #${rm.room_number} is currently reserved or unavailable.`
-          });
-        }
-        assignedRoomType = rm.type || assignedRoomType;
-        assignedRoomId = rm.id;
+      if (rmResult.rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Selected room not found.'
+        });
       }
+      const rm = rmResult.rows[0];
+      if (rm.status && rm.status.toLowerCase() !== 'available') {
+        return res.status(400).json({
+          success: false,
+          message: `Room #${rm.room_number} is currently reserved or unavailable.`
+        });
+      }
+      assignedRoomType = rm.type || assignedRoomType;
+      assignedRoomId = rm.id;
+      roomPricePerNight = parseFloat(rm.price) || 0;
     } else {
       // Auto-assign first available room of the requested type
       const matchResult = await query(
-        `SELECT id FROM rooms
+        `SELECT * FROM rooms
          WHERE (type = $1 OR type ILIKE $1) AND status = 'available'
+         ORDER BY room_number ASC
          LIMIT 1`,
         [assignedRoomType]
       );
@@ -158,15 +108,91 @@ export async function createReservation(req, res) {
           message: `No available rooms found for category ${assignedRoomType}.`
         });
       }
-      assignedRoomId = matchResult.rows[0].id;
+      const rm = matchResult.rows[0];
+      assignedRoomId = rm.id;
+      assignedRoomType = rm.type || assignedRoomType;
+      roomPricePerNight = parseFloat(rm.price) || 0;
     }
 
-    // ── 3. Calculate stay details ───────────────────────────────────────────
+    if (roomPricePerNight <= 0) {
+      roomPricePerNight = 150; // Fallback safe base rate
+    }
+
+    // ── 2. Authoritative Server-Side Price Calculation ────────────────────
+    // NEVER trust client-supplied totalPrice or totalAmount!
+    const serverCalculatedTotal = roomPricePerNight * nights;
+
+    // Only authorized staff (admin/manager/receptionist) can override price manually if needed
+    const userRoleLower = req.user ? (req.user.role || '').toLowerCase() : '';
+    const isStaff = ['admin', 'manager', 'receptionist'].includes(userRoleLower);
+
+    let total = serverCalculatedTotal;
+    if (isStaff && (totalPrice !== undefined || totalAmount !== undefined)) {
+      const customPrice = parseFloat(totalPrice !== undefined ? totalPrice : totalAmount);
+      if (!isNaN(customPrice) && customPrice >= 0) {
+        total = customPrice;
+      }
+    }
+
+    // ── 3. Single Active Booking Restriction ──────────────────────────────
+    // A customer/user cannot book a 2nd room while they have an active booking!
+    if (!isStaff) {
+      const activeRes = await query(
+        `SELECT r.booking_code, r.booking_status
+         FROM reservations r
+         JOIN customers c ON r.customer_id = c.id
+         WHERE (LOWER(c.email) = LOWER($1) OR c.phone = $2)
+           AND r.booking_status IN ('pending', 'confirmed', 'checked_in', 'checked-in')
+         LIMIT 1`,
+        [cleanEmail, cleanPhone]
+      );
+      if (activeRes.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Active reservation already exists (${activeRes.rows[0].booking_code} - ${activeRes.rows[0].booking_status}). You can only book 1 room at a time. Please wait until your current stay is completed or cancelled.`
+        });
+      }
+    }
+
+    // ── 4. Paid Amount & Status Validation ────────────────────────────────
+    let paid = 0;
+    if (isStaff && paidAmount !== undefined) {
+      const parsedPaid = parseFloat(paidAmount);
+      if (!isNaN(parsedPaid) && parsedPaid >= 0 && parsedPaid <= total) {
+        paid = parsedPaid;
+      }
+    }
+
+    let initialStatus = 'pending';
+    if (isStaff && status !== undefined && status !== null) {
+      if (ALLOWED_STATUSES.includes(status.trim().toLowerCase())) {
+        initialStatus = status.trim().toLowerCase().replace(/-/g, '_');
+      }
+    }
+
+    // ── 5. Find or create customer ──────────────────────────────────────────
+    let customerResult = await query('SELECT * FROM customers WHERE LOWER(email) = LOWER($1)', [cleanEmail]);
+    let customerId;
+
+    if (customerResult.rows.length === 0) {
+      customerId = `gst-${Date.now()}`;
+      await query(
+        `INSERT INTO customers (id, name, email, phone, address, cnic_passport)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [customerId, rawName, cleanEmail, cleanPhone, cleanAddress, cleanCnicPassport]
+      );
+    } else {
+      customerId = customerResult.rows[0].id;
+      // Update phone/name if changed
+      await query('UPDATE customers SET name = $2, phone = $3 WHERE id = $1', [customerId, rawName, cleanPhone]);
+    }
+
+    // ── 5. Generate Reference Code ──────────────────────────────────────────
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const bookingCode = `BK-2026-${randomNum}`;
     const reservationId = `bk-${Date.now()}`;
 
-    // ── 4. Insert reservation ──────────────────────────────────────────────
+    // ── 6. Insert reservation ──────────────────────────────────────────────
     await query(
       `INSERT INTO reservations
          (id, booking_code, customer_id, room_id, room_type,
@@ -176,19 +202,18 @@ export async function createReservation(req, res) {
       [
         reservationId, bookingCode, customerId, assignedRoomId, assignedRoomType,
         inDate, outDate, nights, guestCount,
-        total, paid, initialStatus, specialRequests ? specialRequests.trim() : '', bookingSource ? bookingSource.trim() : 'Website'
+        total, paid, initialStatus, cleanSpecialRequests, cleanBookingSource
       ]
     );
 
-    // ── 5. Update room status ONLY if confirmed or checked-in ──────────────────
+    // ── 7. Update room status ONLY if confirmed or checked-in ───────────────
     if (initialStatus === 'confirmed') {
       await query("UPDATE rooms SET status = 'reserved' WHERE id = $1", [assignedRoomId]);
     } else if (initialStatus === 'checked_in') {
       await query("UPDATE rooms SET status = 'occupied' WHERE id = $1", [assignedRoomId]);
     }
-    // Note: If initialStatus is 'pending', the room remains 'available' until confirmed by Admin/ERP
 
-    // ── 6. Insert payment record ONLY if explicit paid amount > 0 ──────────
+    // ── 8. Insert payment record ONLY if explicit paid amount > 0 ───────────
     if (paid > 0) {
       await query(
         `INSERT INTO payments (id, reservation_id, booking_code, amount, payment_method, payment_status)
@@ -197,11 +222,11 @@ export async function createReservation(req, res) {
       );
     }
 
-    // ── 7. Log activity ────────────────────────────────────────────────────
+    // ── 9. Log activity ────────────────────────────────────────────────────
     await logActivity(
-      customerName, 'Customer',
+      rawName, isStaff ? req.user.name : 'Customer',
       'New Reservation Created', 'Bookings',
-      `Booking ${bookingCode} created for ${customerName} (${inDate} to ${outDate}).`
+      `Booking ${bookingCode} created for ${rawName} (${inDate} to ${outDate}). Total: $${total}`
     );
 
     return res.status(201).json({
@@ -211,7 +236,7 @@ export async function createReservation(req, res) {
       bookingCode,
       reservationId,
       message: `Reservation ${bookingCode} successfully created.`,
-      erpPayload: { bookingReference: bookingCode, guestName: customerName, checkIn: inDate, checkOut: outDate, totalPrice: total }
+      erpPayload: { bookingReference: bookingCode, guestName: rawName, checkIn: inDate, checkOut: outDate, totalPrice: total }
     });
   } catch (error) {
     console.error('createReservation error:', error);
@@ -445,4 +470,77 @@ export async function getMyReservations(req, res) {
     return res.status(500).json({ success: false, message: 'Failed to fetch personal reservations.' });
   }
 }
+
+export async function cleanupFakeBookings(req, res) {
+  try {
+    const resList = await query(`
+      SELECT r.*, c.email AS cust_email, c.name AS cust_name, rm.price AS room_price, rm.room_number
+      FROM reservations r
+      LEFT JOIN customers c ON c.id = r.customer_id
+      LEFT JOIN rooms rm ON rm.id = r.room_id
+      ORDER BY r.created_at DESC
+    `);
+
+    const customerMap = new Map();
+    for (const row of resList.rows) {
+      const emailKey = (row.cust_email || row.customer_id || 'unknown').toLowerCase();
+      if (!customerMap.has(emailKey)) {
+        customerMap.set(emailKey, []);
+      }
+      customerMap.get(emailKey).push(row);
+    }
+
+    let deletedCount = 0;
+    let updatedCount = 0;
+
+    for (const [email, bookings] of customerMap.entries()) {
+      const keepBooking = bookings[0];
+      const deleteBookings = bookings.slice(1);
+
+      for (const toDelete of deleteBookings) {
+        await query('DELETE FROM payments WHERE reservation_id = $1 OR booking_code = $2', [toDelete.id, toDelete.booking_code]);
+        await query('DELETE FROM invoices WHERE booking_id = $1', [toDelete.id]);
+        await query('DELETE FROM reservations WHERE id = $1', [toDelete.id]);
+        deletedCount++;
+      }
+
+      let officialRoomPrice = parseFloat(keepBooking.room_price) || 0;
+      if (officialRoomPrice <= 0 && keepBooking.room_id) {
+        const rm = await query('SELECT price FROM rooms WHERE id = $1', [keepBooking.room_id]);
+        if (rm.rows.length > 0) {
+          officialRoomPrice = parseFloat(rm.rows[0].price) || 0;
+        }
+      }
+      if (officialRoomPrice <= 0) {
+        officialRoomPrice = 198;
+      }
+
+      const nights = Math.max(1, parseInt(keepBooking.nights, 10) || 1);
+      const originalTotalPrice = officialRoomPrice * nights;
+
+      await query(
+        `UPDATE reservations
+         SET total_amount = $1, paid_amount = 0, booking_status = 'pending'
+         WHERE id = $2`,
+        [originalTotalPrice, keepBooking.id]
+      );
+      await query('DELETE FROM payments WHERE reservation_id = $1 OR booking_code = $2', [keepBooking.id, keepBooking.booking_code]);
+
+      const cleanCustName = sanitizeInput(keepBooking.cust_name) || 'Guest User';
+      await query('UPDATE customers SET name = $1 WHERE id = $2', [cleanCustName, keepBooking.customer_id]);
+      updatedCount++;
+    }
+
+    return res.json({
+      success: true,
+      message: `Successfully cleaned up ${deletedCount} extra fake bookings. Restored original room prices to Unpaid for ${updatedCount} profiles.`,
+      deletedCount,
+      updatedCount
+    });
+  } catch (error) {
+    console.error('cleanupFakeBookings error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to cleanup fake bookings.' });
+  }
+}
+
 

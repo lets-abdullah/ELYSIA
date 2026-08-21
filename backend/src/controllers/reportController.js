@@ -21,7 +21,7 @@ export async function getDashboardReports(req, res) {
       SELECT
         COUNT(*)                                                             AS total_bookings,
         COUNT(*) FILTER (WHERE booking_status IN ('checked_in','confirmed')) AS active_bookings,
-        COALESCE(SUM(paid_amount) FILTER (WHERE paid_amount > 0), 0)        AS total_revenue
+        COALESCE(SUM(paid_amount) FILTER (WHERE paid_amount > 0 AND booking_status IN ('confirmed', 'checked_in', 'checked-in', 'checked_out', 'checked-out')), 0) AS total_revenue
       FROM reservations
     `);
 
