@@ -44,18 +44,27 @@ export async function getAllCustomers(req, res) {
         [c.id, c.email]
       );
 
-      const bookingHistory = resList.rows.map((r) => ({
-        id: r.id,
-        bookingCode: r.booking_code,
-        roomType: r.room_type,
-        checkInDate: r.check_in_date,
-        checkOutDate: r.check_out_date,
-        nights: r.nights,
-        guests: r.guests,
-        totalAmount: parseFloat(r.total_amount) || 0,
-        paidAmount: parseFloat(r.paid_amount) || 0,
-        status: r.booking_status
-      }));
+      const bookingHistory = resList.rows.map((r) => {
+        let bStatus = r.booking_status || 'pending';
+        if (bStatus.toLowerCase() === 'confirmed') bStatus = 'Confirmed';
+        else if (bStatus.toLowerCase() === 'checked_in' || bStatus.toLowerCase() === 'checked-in') bStatus = 'Checked-in';
+        else if (bStatus.toLowerCase() === 'checked_out' || bStatus.toLowerCase() === 'checked-out') bStatus = 'Checked-out';
+        else if (bStatus.toLowerCase() === 'cancelled') bStatus = 'Cancelled';
+        else if (bStatus.toLowerCase() === 'pending') bStatus = 'Pending';
+
+        return {
+          id: r.id,
+          bookingCode: r.booking_code,
+          roomType: r.room_type,
+          checkInDate: r.check_in_date,
+          checkOutDate: r.check_out_date,
+          nights: r.nights,
+          guests: r.guests,
+          totalAmount: parseFloat(r.total_amount) || 0,
+          paidAmount: parseFloat(r.paid_amount) || 0,
+          status: bStatus
+        };
+      });
 
       const lastTotal = parseFloat(c.last_total) || 0;
       const lastPaid = parseFloat(c.last_paid) || 0;

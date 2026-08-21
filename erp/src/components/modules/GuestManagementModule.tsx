@@ -123,13 +123,20 @@ export const GuestManagementModule: React.FC = () => {
 
   // Filter Guests
   const filteredGuests = guests.filter((guest) => {
-    const matchesSearch =
-      guest.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      guest.email.toLowerCase().includes(search.toLowerCase()) ||
-      guest.phone.includes(search) ||
-      (guest.assignedRoomNumber && guest.assignedRoomNumber.includes(search));
+    const q = search.trim().toLowerCase();
+    const guestName = (guest.fullName || (guest as any).name || '').toLowerCase();
+    const guestEmail = (guest.email || '').toLowerCase();
+    const guestPhone = (guest.phone || '');
+    const roomNum = (guest.assignedRoomNumber || '');
 
-    const matchesPayment = paymentFilter === 'All' || guest.paymentStatus === paymentFilter;
+    const matchesSearch = !q ||
+      guestName.includes(q) ||
+      guestEmail.includes(q) ||
+      guestPhone.includes(q) ||
+      roomNum.includes(q);
+
+    const currentPayment = (guest.paymentStatus || 'Pending').toLowerCase();
+    const matchesPayment = paymentFilter === 'All' || currentPayment === paymentFilter.toLowerCase();
 
     return matchesSearch && matchesPayment;
   });

@@ -26,12 +26,7 @@ export const CheckOutExpressPage: React.FC = () => {
       return;
     }
 
-    // Update payment status on the guest/customer record using the correct guestId
-    if (selectedBooking.guestId) {
-      updateGuestPaymentStatus(selectedBooking.guestId, 'Paid');
-    }
-    // Release room and update reservation status to Checked-out
-    // Backend will auto-create payment record and release room to Available
+    // Release room and update reservation status to Checked-out (room is released to Available, payment remains separate)
     updateBookingStatus(selectedBooking.id, 'Checked-out');
 
     showToast(

@@ -560,14 +560,11 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateBookingStatus = async (id: string, status: BookingStatus) => {
     try {
       const bk = bookings.find((b) => b.id === id);
-      const isCheckOut = status === 'Checked-out';
       const res = await apiFetch(`/reservations/${id}/status`, {
         method: 'PUT',
         body: JSON.stringify({
           status,
-          roomId: bk?.roomId,
-          // Tells backend to auto-settle payment and create payment record
-          settlePayment: isCheckOut
+          roomId: bk?.roomId
         })
       });
       if (res.success) {

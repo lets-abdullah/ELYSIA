@@ -86,13 +86,14 @@ export const RoomManagementModule: React.FC<{
 
   // Filter logic
   const filteredRooms = rooms.filter((r) => {
-    const matchesSearch =
-      r.roomNumber.toLowerCase().includes(search.toLowerCase()) ||
-      r.type.toLowerCase().includes(search.toLowerCase()) ||
-      r.amenities.some((a) => a.toLowerCase().includes(search.toLowerCase()));
+    const q = search.trim().toLowerCase();
+    const matchesSearch = !q ||
+      (r.roomNumber || '').toLowerCase().includes(q) ||
+      (r.type || '').toLowerCase().includes(q) ||
+      (Array.isArray(r.amenities) && r.amenities.some((a) => a.toLowerCase().includes(q)));
 
-    const matchesStatus = statusFilter === 'All' || r.status === statusFilter;
-    const matchesType = typeFilter === 'All' || r.type === typeFilter;
+    const matchesStatus = statusFilter === 'All' || (r.status || '').toLowerCase() === statusFilter.toLowerCase();
+    const matchesType = typeFilter === 'All' || (r.type || '').toLowerCase() === typeFilter.toLowerCase();
 
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -153,6 +154,8 @@ export const RoomManagementModule: React.FC<{
             <option value="All">All Statuses</option>
             <option value="Available">Available</option>
             <option value="Reserved">Reserved</option>
+            <option value="Occupied">Occupied</option>
+            <option value="Maintenance">Maintenance</option>
           </select>
 
           <select
@@ -209,9 +212,9 @@ export const RoomManagementModule: React.FC<{
                     <td className="px-5 py-3.5 font-bold text-slate-900 whitespace-nowrap">${r.price}</td>
                     <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">{r.capacity} Guests</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {/* Functional Room Availability Dropdown - Only Available & Reserved */}
+                      {/* Functional Room Availability Dropdown */}
                       <select
-                        value={r.status === 'Reserved' ? 'Reserved' : 'Available'}
+                        value={r.status === 'Occupied' ? 'Occupied' : r.status === 'Reserved' ? 'Reserved' : r.status === 'Maintenance' ? 'Maintenance' : 'Available'}
                         onChange={(e) => setRoomStatus(r.id, e.target.value as RoomStatus)}
                         className={`px-3 py-1 text-xs font-bold rounded-xl border cursor-pointer whitespace-nowrap outline-none shadow-xs transition-all ${getStatusBadge(
                           r.status
@@ -219,6 +222,8 @@ export const RoomManagementModule: React.FC<{
                       >
                         <option value="Available">Available</option>
                         <option value="Reserved">Reserved</option>
+                        <option value="Occupied">Occupied</option>
+                        <option value="Maintenance">Maintenance</option>
                       </select>
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">

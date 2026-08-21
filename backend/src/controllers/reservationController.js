@@ -180,15 +180,20 @@ export async function createReservation(req, res) {
       ]
     );
 
-    // ── 5. Update room status → reserved ───────────────────────────────────
-    await query("UPDATE rooms SET status = 'reserved' WHERE id = $1", [assignedRoomId]);
+    // ── 5. Update room status ONLY if confirmed or checked-in ──────────────────
+    if (initialStatus === 'confirmed') {
+      await query("UPDATE rooms SET status = 'reserved' WHERE id = $1", [assignedRoomId]);
+    } else if (initialStatus === 'checked_in') {
+      await query("UPDATE rooms SET status = 'occupied' WHERE id = $1", [assignedRoomId]);
+    }
+    // Note: If initialStatus is 'pending', the room remains 'available' until confirmed by Admin/ERP
 
-    // ── 6. Insert payment record if paid > 0 ──────────────────────────────
+    // ── 6. Insert payment record ONLY if explicit paid amount > 0 ──────────
     if (paid > 0) {
       await query(
         `INSERT INTO payments (id, reservation_id, booking_code, amount, payment_method, payment_status)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [`pay-${Date.now()}`, reservationId, bookingCode, paid, 'Credit Card', 'Paid']
+        [`pay-${Date.now()}`, reservationId, bookingCode, paid, 'Credit Card', paid >= total ? 'Paid' : 'Pending']
       );
     }
 
@@ -328,38 +333,16 @@ export async function updateReservationStatus(req, res) {
     // ── Sync room status ───────────────────────────────────────────────────
     if (targetRoomId) {
       let newRoomStatus;
-      if (lowerStatus === 'checked_in')                              newRoomStatus = 'occupied';
-      else if (lowerStatus === 'checked_out' || lowerStatus === 'cancelled') newRoomStatus = 'available';
-      else if (lowerStatus === 'confirmed')                          newRoomStatus = 'reserved';
+      if (lowerStatus === 'checked_in') {
+        newRoomStatus = 'occupied';
+      } else if (lowerStatus === 'confirmed') {
+        newRoomStatus = 'reserved';
+      } else if (lowerStatus === 'checked_out' || lowerStatus === 'cancelled' || lowerStatus === 'pending') {
+        newRoomStatus = 'available';
+      }
 
       if (newRoomStatus) {
         await query('UPDATE rooms SET status = $2 WHERE id = $1', [targetRoomId, newRoomStatus]);
-      }
-    }
-
-    // ── Auto-settle payment on Check-Out ───────────────────────────────────
-    if (lowerStatus === 'checked_out') {
-      const totalAmt = parseFloat(reservation.total_amount) || 0;
-      const alreadyPaid = parseFloat(reservation.paid_amount) || 0;
-      const outstanding = Math.max(0, totalAmt - alreadyPaid);
-
-      // Mark reservation as fully paid
-      await query('UPDATE reservations SET paid_amount = $2 WHERE id = $1', [id, totalAmt]);
-
-      // Insert payment record if there's an outstanding balance
-      if (outstanding > 0 || settlePayment) {
-        await query(
-          `INSERT INTO payments (id, reservation_id, booking_code, amount, payment_method, payment_status, settled_at_checkout)
-           VALUES ($1, $2, $3, $4, $5, $6, TRUE)`,
-          [
-            `pay-${Date.now()}`,
-            id,
-            reservation.booking_code,
-            outstanding > 0 ? outstanding : totalAmt,
-            'Front Desk Settlement',
-            'Paid'
-          ]
-        );
       }
     }
 
@@ -368,9 +351,11 @@ export async function updateReservationStatus(req, res) {
     const userRole = req.user ? req.user.role : 'Receptionist';
     let logMsg;
     if (lowerStatus === 'checked_out') {
-      logMsg = `Guest checked out. Payment settled. Room released to Available.`;
+      logMsg = `Guest checked out. Room released to Available.`;
     } else if (lowerStatus === 'checked_in') {
       logMsg = `Guest checked in. Room set to Occupied.`;
+    } else if (lowerStatus === 'confirmed') {
+      logMsg = `Reservation ${reservation.booking_code} confirmed. Room set to Reserved.`;
     } else if (lowerStatus === 'cancelled') {
       logMsg = `Reservation ${reservation.booking_code} cancelled. Room released to Available.`;
     } else {

@@ -152,12 +152,14 @@ export const BookingModule: React.FC<{
 
   // Filtered bookings
   const filteredBookings = bookings.filter((b) => {
-    const matchesSearch =
-      b.bookingCode.toLowerCase().includes(search.toLowerCase()) ||
-      b.guestName.toLowerCase().includes(search.toLowerCase()) ||
-      b.roomNumber.includes(search);
+    const q = search.trim().toLowerCase();
+    const matchesSearch = !q ||
+      (b.bookingCode || '').toLowerCase().includes(q) ||
+      (b.guestName || '').toLowerCase().includes(q) ||
+      (b.guestPhone || '').includes(q) ||
+      (b.roomNumber || '').includes(q);
 
-    const matchesStatus = statusFilter === 'All' || b.status === statusFilter;
+    const matchesStatus = statusFilter === 'All' || (b.status || '').toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesStatus;
   });

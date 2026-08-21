@@ -57,7 +57,7 @@ export async function getAvailableRooms(req, res) {
             SELECT DISTINCT res.room_id
             FROM reservations res
             WHERE res.room_id IS NOT NULL
-              AND res.booking_status NOT IN ('cancelled', 'checked_out')
+              AND res.booking_status IN ('confirmed', 'checked_in', 'checked-in')
               AND $2::date < res.check_out_date
               AND $3::date > res.check_in_date
           )
