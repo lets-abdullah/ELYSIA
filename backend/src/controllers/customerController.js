@@ -206,38 +206,134 @@ export async function updateCustomerPayment(req, res) {
     const isPaid = paymentStatus.trim().toLowerCase() === 'paid';
     const customerResult = await query('SELECT * FROM customers WHERE id = $1', [id]);
 
+    let targetReservations = [];
+
     if (customerResult.rows.length > 0) {
+      const cust = customerResult.rows[0];
+      const resQuery = await query(
+        `SELECT id, booking_code, room_id, total_amount, booking_status
+         FROM reservations
+         WHERE customer_id = $1 AND booking_status NOT IN ('cancelled', 'checked_out')`,
+        [id]
+      );
+      targetReservations = resQuery.rows;
+
       if (isPaid) {
         await query(
           `UPDATE reservations
-           SET paid_amount = total_amount
+           SET paid_amount = total_amount,
+               booking_status = CASE WHEN booking_status = 'pending' THEN 'confirmed' ELSE booking_status END
            WHERE customer_id = $1 AND booking_status NOT IN ('cancelled', 'checked_out')`,
           [id]
         );
+
+        // Auto-reserve rooms associated with these reservations
+        for (const r of targetReservations) {
+          if (r.room_id) {
+            await query(
+              `UPDATE rooms
+               SET status = 'reserved'
+               WHERE id = $1 AND status NOT IN ('occupied', 'maintenance')`,
+              [r.room_id]
+            );
+          }
+
+          // Insert or update payment record
+          const existingPay = await query('SELECT id FROM payments WHERE reservation_id = $1 OR booking_code = $2', [r.id, r.booking_code]);
+          if (existingPay.rows.length === 0) {
+            await query(
+              `INSERT INTO payments (id, reservation_id, booking_code, amount, payment_method, payment_status)
+               VALUES ($1, $2, $3, $4, $5, $6)`,
+              [`pay-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, r.id, r.booking_code, r.total_amount, 'Credit Card', 'Paid']
+            );
+          } else {
+            await query('UPDATE payments SET payment_status = $1, amount = $2 WHERE reservation_id = $3', ['Paid', r.total_amount, r.id]);
+          }
+        }
       } else {
         await query(
-          `UPDATE reservations SET paid_amount = 0
+          `UPDATE reservations
+           SET paid_amount = 0,
+               booking_status = CASE WHEN booking_status = 'confirmed' THEN 'pending' ELSE booking_status END
            WHERE customer_id = $1 AND booking_status NOT IN ('cancelled', 'checked_out')`,
           [id]
         );
+
+        for (const r of targetReservations) {
+          if (r.room_id) {
+            await query(
+              `UPDATE rooms
+               SET status = 'available'
+               WHERE id = $1 AND status = 'reserved'`,
+              [r.room_id]
+            );
+          }
+          await query('UPDATE payments SET payment_status = $1, amount = 0 WHERE reservation_id = $2', ['Pending', r.id]);
+        }
       }
     } else {
-      // Check if id is a reservation id
-      const resResult = await query('SELECT id, customer_id, total_amount FROM reservations WHERE id = $1 OR booking_code = $1', [id]);
+      // Check if id is a reservation id or booking code
+      const resResult = await query(
+        'SELECT id, customer_id, booking_code, room_id, total_amount, booking_status FROM reservations WHERE id = $1 OR booking_code = $1',
+        [id]
+      );
       if (resResult.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Customer or reservation not found.' });
       }
       const resRow = resResult.rows[0];
+
       if (isPaid) {
-        await query('UPDATE reservations SET paid_amount = total_amount WHERE id = $1', [resRow.id]);
+        await query(
+          `UPDATE reservations
+           SET paid_amount = total_amount,
+               booking_status = CASE WHEN booking_status = 'pending' THEN 'confirmed' ELSE booking_status END
+           WHERE id = $1`,
+          [resRow.id]
+        );
+
+        if (resRow.room_id) {
+          await query(
+            `UPDATE rooms
+             SET status = 'reserved'
+             WHERE id = $1 AND status NOT IN ('occupied', 'maintenance')`,
+            [resRow.room_id]
+          );
+        }
+
+        const existingPay = await query('SELECT id FROM payments WHERE reservation_id = $1 OR booking_code = $2', [resRow.id, resRow.booking_code]);
+        if (existingPay.rows.length === 0) {
+          await query(
+            `INSERT INTO payments (id, reservation_id, booking_code, amount, payment_method, payment_status)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [`pay-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, resRow.id, resRow.booking_code, resRow.total_amount, 'Credit Card', 'Paid']
+          );
+        } else {
+          await query('UPDATE payments SET payment_status = $1, amount = $2 WHERE reservation_id = $3', ['Paid', resRow.total_amount, resRow.id]);
+        }
       } else {
-        await query('UPDATE reservations SET paid_amount = 0 WHERE id = $1', [resRow.id]);
+        await query(
+          `UPDATE reservations
+           SET paid_amount = 0,
+               booking_status = CASE WHEN booking_status = 'confirmed' THEN 'pending' ELSE booking_status END
+           WHERE id = $1`,
+          [resRow.id]
+        );
+
+        if (resRow.room_id) {
+          await query(
+            `UPDATE rooms
+             SET status = 'available'
+             WHERE id = $1 AND status = 'reserved'`,
+            [resRow.room_id]
+          );
+        }
+        await query('UPDATE payments SET payment_status = $1, amount = 0 WHERE reservation_id = $2', ['Pending', resRow.id]);
       }
     }
 
     return res.json({
       success: true,
-      message: `Payment status updated to ${isPaid ? 'PAID' : 'PENDING'}. Revenue updated in database.`
+      message: `Payment status updated to ${isPaid ? 'PAID' : 'PENDING'}. Room status auto-updated and revenue synchronized in database.`
     });
   } catch (error) {
     console.error('updateCustomerPayment error:', error);

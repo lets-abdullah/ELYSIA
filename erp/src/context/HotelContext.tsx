@@ -187,7 +187,22 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // 1. Fetch Rooms
       const roomsRes = await apiFetch('/rooms');
       if (roomsRes.success && roomsRes.rooms) {
-        setRooms(roomsRes.rooms);
+        const normalizedRooms: Room[] = roomsRes.rooms.map((r: any) => {
+          let status: RoomStatus = 'Available';
+          if (r.status) {
+            const s = String(r.status).trim().toLowerCase();
+            if (s === 'occupied') status = 'Occupied';
+            else if (s === 'reserved') status = 'Reserved';
+            else if (s === 'cleaning') status = 'Cleaning';
+            else if (s === 'maintenance') status = 'Maintenance';
+            else status = 'Available';
+          }
+          return {
+            ...r,
+            status
+          };
+        });
+        setRooms(normalizedRooms);
       }
 
       // 2. Fetch Reservations
@@ -424,6 +439,9 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setRoomStatus = async (id: string, status: RoomStatus) => {
     try {
+      setRooms((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status } : r))
+      );
       const lowerStatus = status.toLowerCase();
       const res = await apiFetch(`/rooms/${id}`, {
         method: 'PUT',
@@ -435,6 +453,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (err: any) {
       showToast('Status Update Failed', err.message, 'error');
+      refreshDataFromBackend();
     }
   };
 
@@ -471,19 +490,20 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateGuestPaymentStatus = async (guestId: string, paymentStatus: 'Paid' | 'Pending') => {
     try {
+      setGuests((prev) =>
+        prev.map((g) => (g.id === guestId ? { ...g, paymentStatus } : g))
+      );
       const res = await apiFetch(`/customers/${guestId}/payment`, {
         method: 'PUT',
         body: JSON.stringify({ paymentStatus })
       });
       if (res.success) {
-        showToast('Payment Status Updated', `Guest payment marked as ${paymentStatus.toUpperCase()}.`, 'success');
-        setGuests((prev) =>
-          prev.map((g) => (g.id === guestId ? { ...g, paymentStatus } : g))
-        );
-        refreshDataFromBackend();
+        showToast('Payment Status Updated', `Guest payment marked as ${paymentStatus.toUpperCase()}. Room status auto-updated.`, 'success');
+        await refreshDataFromBackend();
       }
     } catch (err: any) {
       showToast('Payment Update Failed', err.message || 'Error updating payment status.', 'error');
+      refreshDataFromBackend();
     }
   };
 

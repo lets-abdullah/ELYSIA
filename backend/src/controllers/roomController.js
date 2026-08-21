@@ -2,6 +2,27 @@ import { query } from '../db/pool.js';
 
 /** Shape a raw DB row into the format the Frontend/ERP expect */
 function formatRoom(r) {
+  let status = 'Available';
+  if (r.status) {
+    const s = String(r.status).trim().toLowerCase();
+    if (s === 'occupied') status = 'Occupied';
+    else if (s === 'reserved') status = 'Reserved';
+    else if (s === 'cleaning') status = 'Cleaning';
+    else if (s === 'maintenance') status = 'Maintenance';
+    else status = 'Available';
+  }
+
+  let parsedAmenities = [];
+  if (Array.isArray(r.amenities)) {
+    parsedAmenities = r.amenities;
+  } else if (typeof r.amenities === 'string' && r.amenities.trim() !== '') {
+    try {
+      parsedAmenities = JSON.parse(r.amenities);
+    } catch {
+      parsedAmenities = [];
+    }
+  }
+
   return {
     id: r.id,
     name: r.name || `${r.type} ${r.room_number}`,
@@ -20,9 +41,9 @@ function formatRoom(r) {
     image: r.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop&q=80',
     gallery: r.gallery || [r.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop&q=80'],
     description: r.notes || `Spacious and elegantly furnished ${r.type} room.`,
-    amenities: Array.isArray(r.amenities) ? r.amenities : [],
-    status: r.status || 'available',
-    isReserved: r.status === 'reserved' || r.status === 'occupied',
+    amenities: Array.isArray(parsedAmenities) ? parsedAmenities : [],
+    status: status,
+    isReserved: status === 'Reserved' || status === 'Occupied',
     notes: r.notes || ''
   };
 }
@@ -156,7 +177,7 @@ export async function updateRoom(req, res) {
         body.amenities !== undefined
           ? JSON.stringify(Array.isArray(body.amenities) ? body.amenities : [])
           : (typeof r.amenities === 'string' ? r.amenities : JSON.stringify(r.amenities || [])),
-        body.status || r.status,
+        body.status !== undefined ? body.status.toLowerCase() : r.status,
         body.notes !== undefined ? body.notes : r.notes,
         body.image || r.image
       ]

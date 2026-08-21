@@ -85,7 +85,7 @@ export const CustomerWebsite: React.FC = () => {
 
   // Calculate dynamic availability count for each room type from ERP state
   const getAvailabilityCount = (type: RoomType) => {
-    return rooms.filter((r) => r.type === type && r.status === 'Available').length;
+    return rooms.filter((r) => r.type === type && (r.status || '').toLowerCase() === 'available').length;
   };
 
   // Calculate stay duration & total price

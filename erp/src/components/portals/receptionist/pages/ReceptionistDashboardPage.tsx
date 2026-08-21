@@ -13,10 +13,10 @@ export const ReceptionistDashboardPage: React.FC<ReceptionistDashboardPageProps>
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const todayCheckIns = bookings.filter((b) => b.checkInDate <= todayStr && b.status === 'Confirmed');
-  const todayCheckOuts = bookings.filter((b) => b.status === 'Checked-in');
-  const upcomingReservations = bookings.filter((b) => b.status === 'Confirmed');
-  const availableRooms = rooms.filter((r) => r.status === 'Available');
+  const todayCheckIns = bookings.filter((b) => b.checkInDate <= todayStr && (b.status || '').toLowerCase() === 'confirmed');
+  const todayCheckOuts = bookings.filter((b) => (b.status || '').toLowerCase() === 'checked-in' || (b.status || '').toLowerCase() === 'checked_in');
+  const upcomingReservations = bookings.filter((b) => (b.status || '').toLowerCase() === 'confirmed');
+  const availableRooms = rooms.filter((r) => (r.status || '').toLowerCase() === 'available');
 
   return (
     <div className="space-y-6">

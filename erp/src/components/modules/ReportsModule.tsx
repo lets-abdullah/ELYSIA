@@ -88,7 +88,7 @@ export const ReportsModule: React.FC = () => {
     let csvContent = 'data:text/csv;charset=utf-8,Module,Metric,Value\n';
     csvContent += `Revenue,Total Collected,$${totalRevenue}\n`;
     csvContent += `Rooms,Total Rooms,${rooms.length}\n`;
-    csvContent += `Occupancy,Occupied Rooms,${rooms.filter((r) => r.status === 'Occupied').length}\n`;
+    csvContent += `Occupancy,Occupied Rooms,${rooms.filter((r) => (r.status || '').toLowerCase() === 'occupied').length}\n`;
     csvContent += `Guests,Registered Guests,${guests.length}\n`;
     csvContent += `Staff,Active Employees,${staff.length}\n`;
 
@@ -248,13 +248,13 @@ export const ReportsModule: React.FC = () => {
                 <div className="p-3 bg-amber-50 rounded-xl flex items-center justify-between">
                   <span className="text-amber-800 font-medium">Occupied Rooms:</span>
                   <span className="font-bold text-amber-700 font-mono">
-                    {rooms.filter((r) => r.status === 'Occupied').length}
+                    {rooms.filter((r) => (r.status || '').toLowerCase() === 'occupied').length}
                   </span>
                 </div>
                 <div className="p-3 bg-emerald-50 rounded-xl flex items-center justify-between">
                   <span className="text-emerald-800 font-medium">Available Rooms:</span>
                   <span className="font-bold text-emerald-700 font-mono">
-                    {rooms.filter((r) => r.status === 'Available').length}
+                    {rooms.filter((r) => (r.status || '').toLowerCase() === 'available').length}
                   </span>
                 </div>
               </div>

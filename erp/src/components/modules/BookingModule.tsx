@@ -80,7 +80,7 @@ export const BookingModule: React.FC<{
     const next2Days = new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0];
 
     const firstGuest = guests[0];
-    const firstAvailRoom = rooms.find((r) => r.status === 'Available') || rooms[0];
+    const firstAvailRoom = rooms.find((r) => (r.status || '').toLowerCase() === 'available') || rooms[0];
 
     setFormData({
       guestId: firstGuest ? firstGuest.id : '',
@@ -375,7 +375,7 @@ export const BookingModule: React.FC<{
                           onClick={() => {
                             setAssignRoomBooking(bk);
                             const matchingAvail = rooms.find(
-                              (r) => r.type === bk.roomType && r.status === 'Available'
+                              (r) => r.type === bk.roomType && (r.status || '').toLowerCase() === 'available'
                             );
                             setSelectedRoomIdToAssign(matchingAvail ? matchingAvail.id : '');
                           }}
@@ -707,14 +707,14 @@ export const BookingModule: React.FC<{
               >
                 <option value="">-- Choose Room --</option>
                 {rooms
-                  .filter((r) => r.status === 'Available')
+                  .filter((r) => (r.status || '').toLowerCase() === 'available')
                   .map((rm) => (
                     <option key={rm.id} value={rm.id}>
                       Room #{rm.roomNumber} — {rm.type} (${rm.price}/night) {rm.type === assignRoomBooking.roomType ? '★ Matches Request' : ''}
                     </option>
                   ))}
               </select>
-              {rooms.filter((r) => r.status === 'Available').length === 0 && (
+              {rooms.filter((r) => (r.status || '').toLowerCase() === 'available').length === 0 && (
                 <p className="text-rose-600 font-bold mt-2">
                   No rooms currently marked as "Available" in ERP. Please mark a room as Clean & Available first.
                 </p>

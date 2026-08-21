@@ -46,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { currentUser, resetDemoData, rooms, housekeepingTasks } = useHotel();
 
   // Pending tasks indicator counts
-  const cleaningCount = rooms.filter((r) => r.status === 'Cleaning').length;
+  const cleaningCount = rooms.filter((r) => (r.status || '').toLowerCase() === 'cleaning').length;
   const pendingHkCount = housekeepingTasks.filter((t) => t.status === 'Pending').length;
 
   const navItems = [

@@ -58,7 +58,7 @@ export const GuestManagementModule: React.FC = () => {
       address: '',
       checkInDate: today,
       checkOutDate: next3Days,
-      assignedRoomId: rooms.find((r) => r.status === 'Available')?.id || '',
+      assignedRoomId: rooms.find((r) => (r.status || '').toLowerCase() === 'available')?.id || '',
       paymentStatus: 'Pending',
       vipStatus: false,
       notes: ''

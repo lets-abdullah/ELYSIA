@@ -14,7 +14,7 @@ export const AnalyticsModule: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   // Computed metrics
-  const totalOccupied = rooms.filter((r) => r.status === 'Occupied').length;
+  const totalOccupied = rooms.filter((r) => (r.status || '').toLowerCase() === 'occupied').length;
   const totalRooms = rooms.length;
   const occupancyRate = ((totalOccupied / (totalRooms || 1)) * 100).toFixed(1);
   const totalRev = (invoices || []).reduce((acc, i) => acc + (i?.paidAmount || 0), 0);

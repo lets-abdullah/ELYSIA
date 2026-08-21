@@ -118,9 +118,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
 
   // Room status pie chart data
   const roomDistributionData = [
-    { name: 'Available', value: availableRooms > 0 ? availableRooms : 8, color: '#10b981' },
-    { name: 'Reserved', value: reservedRooms > 0 ? reservedRooms : 2, color: '#3b82f6' },
+    { name: 'Available', value: availableRooms, color: '#10b981' },
+    { name: 'Reserved', value: reservedRooms, color: '#3b82f6' },
     { name: 'Occupied', value: occupiedRooms, color: '#6366f1' },
+    { name: 'Cleaning', value: cleaningRooms, color: '#f59e0b' },
     { name: 'Maintenance', value: maintenanceRooms, color: '#f43f5e' }
   ].filter((d) => d.value > 0);
 
@@ -159,9 +160,9 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           title="Ready Rooms"
           value={availableRooms}
           subtitle="Available for allocation"
-          trend={{ value: "Inspected", isPositive: true }}
+          trend={{ value: `${totalRooms > 0 ? Math.round((availableRooms / totalRooms) * 100) : 0}% Available`, isPositive: true }}
           icon={CheckCircle2}
-          color="amber"
+          color="emerald"
           onClick={() => setActiveTab?.('rooms')}
         />
       </div>
